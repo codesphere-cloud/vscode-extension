@@ -13,7 +13,7 @@
 .oauth {
     display: flex;
     justify-content: center;
-    gap: 10px; /* Abstand zwischen den Buttons */
+    gap: 20px; /* Abstand zwischen den Buttons */
     max-width: 400px;
 }
 
@@ -31,22 +31,7 @@
     background-color: #f0f0f0;
 }
 
-/* Stile für die spezifischen OAuth-Buttons */
-.github-button svg {
-    fill: #000000; /* GitHub Icon Farbe */
-}
 
-.google-button svg {
-    fill: #4285f4; /* Google Icon Farbe */
-}
-
-.bitbucket-button svg {
-    fill: #2684ff; /* Bitbucket Icon Farbe */
-}
-
-.gitlab-button svg {
-    fill: #fc6d26; /* GitLab Icon Farbe */
-}
 
 .header {
     font-size: 24px;
@@ -89,7 +74,7 @@
     .password-container {
         position: relative;
         width: 100%;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
 
     .icon-left {
@@ -169,7 +154,7 @@
     </div>
     <div class="oauth-button gitlab-oauth-button">
         <button class="gitlab-button">
-            <svg viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+            <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" width="42" height="42">
                 <!-- GitLab SVG Icon -->
                 <defs>
                     <style>.cls-1{fill:#e24329;}.cls-2{fill:#fc6d26;}.cls-3{fill:#fca326;}</style>
