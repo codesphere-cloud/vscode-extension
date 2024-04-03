@@ -1,4 +1,5 @@
 import svelte from "rollup-plugin-svelte";
+import svg from "rollup-plugin-svg";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import { terser } from "rollup-plugin-terser";
@@ -43,6 +44,7 @@ export default fs
           dedupe: ["svelte"],
         }),
         commonjs(),
+        svg(),
         typescript({
           tsconfig: "webviews/tsconfig.json",
           sourceMap: !production,
