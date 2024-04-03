@@ -3,14 +3,116 @@
 </script>
 
 <style>
-    svg {
+.codesphere {
     width: 100%; /* Die Breite des SVG entspricht der Breite des übergeordneten Elements */
     height: auto; /* Die Höhe wird automatisch angepasst, um das Seitenverhältnis beizubehalten */
     max-width: 300px; /* Die maximale Breite des SVG ist 500px */
-  }
+    padding-bottom: 20px; /* Abstand zum nächsten Element */
+}
+
+.oauth {
+    display: flex;
+    justify-content: center;
+    gap: 10px; /* Abstand zwischen den Buttons */
+    max-width: 400px;
+}
+
+.oauth-button button {
+    width: 50px;  /* Adjust as needed */
+    height: 50px;  /* Adjust as needed */
+    padding: 10px 10px;
+    background-color: var(--vscode-editor-background);
+    border-radius: 100%;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.oauth-button button:hover {
+    background-color: #f0f0f0;
+}
+
+/* Stile für die spezifischen OAuth-Buttons */
+.github-button svg {
+    fill: #000000; /* GitHub Icon Farbe */
+}
+
+.google-button svg {
+    fill: #4285f4; /* Google Icon Farbe */
+}
+
+.bitbucket-button svg {
+    fill: #2684ff; /* Bitbucket Icon Farbe */
+}
+
+.gitlab-button svg {
+    fill: #fc6d26; /* GitLab Icon Farbe */
+}
+
+.header {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    padding-bottom: 5px;
+    text-align: center;
+    max-width: 400px;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    max-width: 400px;
+}
+
+.divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid;
+}
+
+.form-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+    gap: 10px;
+    max-width: 400px;
+}
+
+.link-container {
+    display: flex;
+    justify-content: center;
+}
+
+.email-container,
+    .password-container {
+        position: relative;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .icon-left {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none; /* Damit das Icon nicht anklickbar ist */
+    }
+
+    .icon-left svg {
+        height: 20px; /* Hier können Sie die Höhe des Icons anpassen */
+        width: auto;
+    }
+
+    .email-input,
+    .password-input {
+        padding-left: 40px; /* Platz für das Icon */
+    }
+
 </style>
 
-<svg width="928" height="200" viewBox="0 0 928 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg class="codesphere" width="928" height="200" viewBox="0 0 928 200" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path fill-rule="evenodd" clip-rule="evenodd" d="M100 19.6721C55.6361 19.6721 19.6721 55.6361 19.6721 100C19.6721 144.364 55.6361 180.328 100 180.328C144.364 180.328 180.328 144.364 180.328 100C180.328 55.6361 144.364 19.6721 100 19.6721ZM0 100C0 44.7715 44.7715 0 100 0C155.228 0 200 44.7715 200 100C200 155.228 155.228 200 100 200C44.7715 200 0 155.228 0 100Z" fill="#814BF6"/>
     <path fill-rule="evenodd" clip-rule="evenodd" d="M100 64.7541C80.5342 64.7541 64.7541 80.5342 64.7541 100C64.7541 119.466 80.5342 135.246 100 135.246C119.466 135.246 135.246 119.466 135.246 100C135.246 80.5342 119.466 64.7541 100 64.7541ZM45.082 100C45.082 69.6696 69.6696 45.082 100 45.082C130.33 45.082 154.918 69.6696 154.918 100C154.918 130.33 130.33 154.918 100 154.918C69.6696 154.918 45.082 130.33 45.082 100Z" fill="#00BCFF"/>
     <path d="M264.471 132.89C282.039 132.89 293.077 122.585 293.936 107.428H276.67C275.596 114.47 270.957 118.42 264.686 118.42C256.139 118.42 250.598 111.249 250.598 98.626C250.598 86.1742 256.182 79.0467 264.686 79.0467C271.387 79.0467 275.682 83.4692 276.67 90.0386H293.936C293.163 74.7959 281.609 64.7916 264.386 64.7916C244.37 64.7916 232 78.6603 232 98.8836C232 118.935 244.155 132.89 264.471 132.89Z" fill="white"/>
@@ -24,6 +126,105 @@
     <path d="M821.233 131.602H839.53V94.2893C839.53 86.1742 845.458 80.5924 853.533 80.5924C856.067 80.5924 859.546 81.0218 861.264 81.58V65.3498C859.632 64.9634 857.355 64.7058 855.508 64.7058C848.121 64.7058 842.064 68.9995 839.659 77.1575H838.972V65.6504H821.233V131.602Z" fill="white"/>
     <path d="M897.719 132.89C914.041 132.89 925.036 124.946 927.613 112.709L910.691 111.593C908.844 116.617 904.119 119.236 898.02 119.236C888.871 119.236 883.073 113.182 883.073 103.349V103.306H928V98.2825C928 75.8694 914.427 64.7916 896.989 64.7916C877.575 64.7916 864.99 78.5744 864.99 98.9265C864.99 119.837 877.403 132.89 897.719 132.89ZM883.073 91.9707C883.459 84.4568 889.172 78.4456 897.29 78.4456C905.236 78.4456 910.733 84.1133 910.776 91.9707H883.073Z" fill="white"/>
 </svg>
+
+<h1 class="header">Sign in</h1>
+
+<div class="oauth">
+    <div class="oauth-button github-oauth-button">
+        <button class="github-button">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <!-- GitHub SVG Icon -->
+                <rect height="24" width="24" fill="none" x="0"></rect>
+                <g>
+                    <path d="M12 2C6.477 2 2 6.477 2 12c0 4.419 2.865 8.166 6.839 9.489.5.09.682-.218.682-.484 0-.236-.009-.866-.014-1.699-2.782.602-3.369-1.34-3.369-1.34-.455-1.157-1.11-1.465-1.11-1.465-.909-.62.069-.608.069-.608 1.004.071 1.532 1.03 1.532 1.03.891 1.529 2.341 1.089 2.91.833.091-.647.349-1.086.635-1.337-2.22-.251-4.555-1.111-4.555-4.943 0-1.091.39-1.984 1.03-2.682-.103-.254-.447-1.27.097-2.646 0 0 .84-.269 2.75 1.025A9.548 9.548 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.748-1.025 2.748-1.025.546 1.376.202 2.394.1 2.646.64.699 1.026 1.591 1.026 2.682 0 3.841-2.337 4.687-4.565 4.935.359.307.679.917.679 1.852 0 1.335-.012 2.415-.012 2.741 0 .269.18.579.688.481A9.997 9.997 0 0022 12c0-5.523-4.477-10-10-10z"></path>
+                </g>
+            </svg>
+        </button>
+    </div>
+    <div class="oauth-button google-oauth-button">
+        <button class="google-button">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 19 19" height="19" width="19">
+                <!-- Google SVG Icon -->
+                <path fill="#FFC107" d="M18.0798 7.78631H17.375V7.75H9.5V11.25H14.4451C13.7236 13.2874 11.7851 14.75 9.5 14.75C6.60069 14.75 4.25 12.3993 4.25 9.5C4.25 6.60069 6.60069 4.25 9.5 4.25C10.8383 4.25 12.0559 4.75487 12.9829 5.57956L15.4579 3.10462C13.8951 1.64819 11.8048 0.75 9.5 0.75C4.66781 0.75 0.75 4.66781 0.75 9.5C0.75 14.3322 4.66781 18.25 9.5 18.25C14.3322 18.25 18.25 14.3322 18.25 9.5C18.25 8.91331 18.1896 8.34063 18.0798 7.78631Z"></path>
+                <path fill="#FF3D00" d="M1.75885 5.42731L4.63366 7.53563C5.41154 5.60975 7.29541 4.25 9.49997 4.25C10.8383 4.25 12.0559 4.75488 12.9829 5.57956L15.4578 3.10463C13.8951 1.64819 11.8047 0.75 9.49997 0.75C6.1391 0.75 3.22447 2.64744 1.75885 5.42731Z"></path>
+                <path fill="#4CAF50" d="M9.49995 18.25C11.7601 18.25 13.8137 17.385 15.3664 15.9785L12.6583 13.6868C11.7503 14.3774 10.6407 14.7509 9.49995 14.75C7.22408 14.75 5.29164 13.2988 4.56364 11.2736L1.71027 13.472C3.15839 16.3057 6.09927 18.25 9.49995 18.25Z"></path>
+                <path fill="#1976D2" d="M18.0798 7.78631H17.375V7.75H9.5V11.25H14.4451C14.1 12.2197 13.4783 13.067 12.657 13.6873L12.6583 13.6864L15.3664 15.9781C15.1748 16.1522 18.25 13.875 18.25 9.5C18.25 8.91331 18.1896 8.34063 18.0798 7.78631Z"></path>
+            </svg>
+        </button>
+    </div>
+    <div class="oauth-button bitbucket-oauth-button">
+        <button class="bitbucket-button">
+            <svg viewBox="-0.9662264221278978 -0.5824607696358868 257.93281329857973 230.8324730411935" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                <!-- Bitbucket SVG Icon -->
+                <linearGradient y2="78.776%" y1="13.818%" x2="46.927%" x1="108.633%" id="a">
+                    <stop stop-color="#0052cc" offset=".18"></stop>
+                    <stop stop-color="#2684ff" offset="1"></stop>
+                </linearGradient>
+                <g fill="none">
+                    <path d="M101.272 152.561h53.449l12.901-75.32H87.06z"></path>
+                    <path fill="#2684ff" d="M8.308 0A8.202 8.202 0 0 0 .106 9.516l34.819 211.373a11.155 11.155 0 0 0 10.909 9.31h167.04a8.202 8.202 0 0 0 8.201-6.89l34.82-213.752a8.202 8.202 0 0 0-8.203-9.514zm146.616 152.768h-53.315l-14.436-75.42h80.67z"></path><path fill="url(#a)" d="M244.61 77.242h-76.916l-12.909 75.36h-53.272l-62.902 74.663a11.105 11.105 0 0 0 7.171 2.704H212.73a8.196 8.196 0 0 0 8.196-6.884z"></path>
+                </g>
+            </svg>
+        </button>
+    </div>
+    <div class="oauth-button gitlab-oauth-button">
+        <button class="gitlab-button">
+            <svg viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                <!-- GitLab SVG Icon -->
+                <defs>
+                    <style>.cls-1{fill:#e24329;}.cls-2{fill:#fc6d26;}.cls-3{fill:#fca326;}</style>
+                </defs>
+                <g id="LOGO">
+                    <path d="M282.83,170.73l-.27-.69-26.14-68.22a6.81,6.81,0,0,0-2.69-3.24,7,7,0,0,0-8,.43,7,7,0,0,0-2.32,3.52l-17.65,54H154.29l-17.65-54A6.86,6.86,0,0,0,134.32,99a7,7,0,0,0-8-.43,6.87,6.87,0,0,0-2.69,3.24L97.44,170l-.26.69a48.54,48.54,0,0,0,16.1,56.1l.09.07.24.17,39.82,29.82,19.7,14.91,12,9.06a8.07,8.07,0,0,0,9.76,0l12-9.06,19.7-14.91,40.06-30,.1-.08A48.56,48.56,0,0,0,282.83,170.73Z" class="cls-1"></path>
+                    <path d="M282.83,170.73l-.27-.69a88.3,88.3,0,0,0-35.15,15.8L190,229.25c19.55,14.79,36.57,27.64,36.57,27.64l40.06-30,.1-.08A48.56,48.56,0,0,0,282.83,170.73Z" class="cls-2"></path>
+                    <path d="M153.43,256.89l19.7,14.91,12,9.06a8.07,8.07,0,0,0,9.76,0l12-9.06,19.7-14.91S209.55,244,190,229.25C170.45,244,153.43,256.89,153.43,256.89Z" class="cls-3"></path>
+                    <path d="M132.58,185.84A88.19,88.19,0,0,0,97.44,170l-.26.69a48.54,48.54,0,0,0,16.1,56.1l.09.07.24.17,39.82,29.82s17-12.85,36.57-27.64Z" class="cls-2"></path>
+                </g>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<div class="divider">
+    <span>or sign in via email</span>
+</div>
     
 
-<button>supi</button>
+<div class="form-container">
+    <div class="email-container">
+        <i class="icon-left">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 16" height="16" width="16">
+                <g clip-path="url(#clip0)">
+                    <path fill="#814BF6" d="M14 1H2C1.46957 1 0.960859 1.21071 0.585786 1.58579C0.210714 1.96086 0 2.46957 0 3L0 3.4L8 7.9L16 3.5V3C16 2.46957 15.7893 1.96086 15.4142 1.58579C15.0391 1.21071 14.5304 1 14 1Z"></path>
+                    <path fill="#814BF6" d="M7.5 9.89995L0 5.69995V13C0 13.5304 0.210714 14.0391 0.585786 14.4142C0.960859 14.7892 1.46957 15 2 15H14C14.5304 15 15.0391 14.7892 15.4142 14.4142C15.7893 14.0391 16 13.5304 16 13V5.69995L8.5 9.89995C8.3424 9.96919 8.17214 10.0049 8 10.0049C7.82786 10.0049 7.6576 9.96919 7.5 9.89995Z"></path>
+                </g>
+                <defs>
+                    <clipPath id="clip0">
+                        <rect fill="white" height="16" width="16"></rect>
+                    </clipPath>
+                </defs>
+            </svg>
+        </i>
+        <input required="" placeholder="Email" autocomplete="email" type="email" class="email-input" id="email-signin">
+    </div>
+    <div class="password-container">
+        <i class="icon-left">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 16" height="16" width="16">
+                <g clip-path="url(#clip0)">
+                    <path fill="#814BF6" d="M14.707 0.293031C14.5195 0.10556 14.2652 0.000244141 14 0.000244141C13.7348 0.000244141 13.4805 0.10556 13.293 0.293031L6.02 7.56603C5.40985 7.19907 4.71199 7.00353 4 7.00003C3.20888 7.00003 2.43552 7.23463 1.77772 7.67415C1.11992 8.11368 0.607234 8.73839 0.304484 9.4693C0.00173312 10.2002 -0.0774802 11.0045 0.0768607 11.7804C0.231202 12.5563 0.612165 13.269 1.17157 13.8285C1.73098 14.3879 2.44372 14.7688 3.21964 14.9232C3.99556 15.0775 4.79983 14.9983 5.53074 14.6955C6.26164 14.3928 6.88635 13.8801 7.32588 13.2223C7.76541 12.5645 8 11.7912 8 11C7.99651 10.288 7.80097 9.59018 7.434 8.98003L9.854 6.56103L11.646 8.35403C11.6924 8.40059 11.7476 8.43754 11.8084 8.46274C11.8691 8.48795 11.9342 8.50092 12 8.50092C12.0658 8.50092 12.1309 8.48795 12.1916 8.46274C12.2524 8.43754 12.3076 8.40059 12.354 8.35403L14.854 5.85403C14.9006 5.80758 14.9375 5.75241 14.9627 5.69166C14.9879 5.63092 15.0009 5.5658 15.0009 5.50003C15.0009 5.43426 14.9879 5.36914 14.9627 5.3084C14.9375 5.24765 14.9006 5.19248 14.854 5.14603L13.061 3.35403L14.707 1.70703C14.8945 1.5195 14.9998 1.26519 14.9998 1.00003C14.9998 0.734866 14.8945 0.480558 14.707 0.293031Z"></path>
+                </g>
+                <defs>
+                    <clipPath id="clip0">
+                        <rect fill="white" height="16" width="16"></rect>
+                    </clipPath>
+                </defs>
+            </svg>
+        </i>
+        <input required="" placeholder="Password" autocomplete="current-password" type="password" class="password-input" id="password-signin">
+    </div>
+    <div class="link-container">
+        <a class="reset-password" href="codesphere.com">Forgot your password?</a>
+    </div>
+    <button type="submit" id="signin-commit-button">Sign in</button>
+    <p class="error-commit hidden"></p>
+</div>
