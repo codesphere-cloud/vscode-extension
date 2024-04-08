@@ -1,12 +1,15 @@
 import * as vscode from 'vscode';
 import { HelloWorldPanel } from './HelloWorldPanel';
 import { SidebarProvider } from './SidebarProvider';
+import { authenticate } from './authenticate';
+const axios = require('axios');
+
 
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "codesphere" is now active!');
 	
-	const sidebarProvider = new SidebarProvider(context.extensionUri);
+	const sidebarProvider = new SidebarProvider(context.extensionUri, context);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       "codesphere-sidebar",
@@ -18,6 +21,12 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('codesphere.helloWorld', () => {
 			HelloWorldPanel.createOrShow(context.extensionUri);
 	})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('codesphere.authenticate', () => {
+			authenticate();
+		})
 	);
 
 	context.subscriptions.push(

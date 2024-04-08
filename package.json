@@ -9,7 +9,8 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -44,6 +45,14 @@
       {
         "command": "codesphere.refresh",
         "title": "refresh all webviews"
+      },
+      {
+        "command": "codesphere.authenticate",
+        "title": "Authentication"
+      },
+      {
+        "command": "codesphere.test",
+        "title": "test authentication"
       }
     ]
   },
@@ -66,7 +75,9 @@
     "@tsconfig/svelte": "^5.0.4",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
+    "@types/request": "^2.48.12",
     "@types/vscode": "^1.87.0",
+    "@types/vscode-webview": "^1.57.5",
     "@typescript-eslint/eslint-plugin": "^7.4.0",
     "@typescript-eslint/parser": "^7.4.0",
     "@vscode/test-cli": "^0.0.8",
@@ -89,6 +100,10 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "n": "^9.2.1"
+    "axios": "^1.6.8",
+    "n": "^9.2.1",
+    "request": "^2.88.2",
+    "requests": "^0.3.0",
+    "watch": "^1.0.2"
   }
 }
