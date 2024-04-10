@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { HelloWorldPanel } from './HelloWorldPanel';
 import { SidebarProvider } from './SidebarProvider';
-import { authenticate } from './authenticate';
 const axios = require('axios');
 
 
@@ -16,17 +15,17 @@ export function activate(context: vscode.ExtensionContext) {
       sidebarProvider
     )
   );
+
+  context.subscriptions.push(
+	vscode.commands.registerCommand('codesphere.notLoggedIn', () => {
+	  vscode.window.showInformationMessage('You need to log in to use this feature.');
+	})
+  );
 	
 	context.subscriptions.push(
 		vscode.commands.registerCommand('codesphere.helloWorld', () => {
 			HelloWorldPanel.createOrShow(context.extensionUri);
 	})
-	);
-
-	context.subscriptions.push(
-		vscode.commands.registerCommand('codesphere.authenticate', () => {
-			authenticate();
-		})
 	);
 
 	context.subscriptions.push(
@@ -51,6 +50,28 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 		})
 	);
+
+	
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('codesphere.submenu', async () => {
+			vscode.window.showInformationMessage("Do you want to log out??", "yes", "no").then((response) => {
+				if (response === "yes") {
+					context.secrets.delete('codesphere.accessToken');
+					context.secrets.delete('codesphere.sessionId');
+					sidebarProvider.updateWebviewContent();				
+					vscode.window.showInformationMessage("Sucessfully logged out.");
+					// After the user has successfully logged out
+					vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', false);
+				} else if (response === "no") {
+					vscode.window.showInformationMessage("You are still logged in.");
+				}
+			});
+		  
+		})
+	  );
+
+	  
 };
 
 

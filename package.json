@@ -10,6 +10,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onStartupFinished:decideLoginOrNot"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -33,7 +34,32 @@
         }
       ]
     },
+    "menus": {
+      "view/title": [
+        {
+          "command": "codesphere.notLoggedIn",
+          "when": "view == codesphere-sidebar && !codesphere.isLoggedIn",
+          "group": "navigation"
+        },
+        {
+          "command": "codesphere.submenu",
+          "when": "view == codesphere-sidebar && codesphere.isLoggedIn",
+          "group": "navigation"
+        }
+      ]
+    },
     "commands": [
+      {
+        "command": "codesphere.notLoggedIn",
+        "title": "Not Logged In",
+        "category": "Codesphere"
+      },
+      {
+        "command": "codesphere.submenu",
+        "title": "logout",
+        "icon": "$(debug-disconnect)",
+        "category": "Codesphere"
+      },
       {
         "command": "codesphere.helloWorld",
         "title": "Hello World"

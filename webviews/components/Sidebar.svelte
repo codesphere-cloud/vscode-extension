@@ -1,9 +1,20 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import "vscode-webview"
     import vscode from "vscode-webview-message";
 
     let email = '';
     let password = '';
+    let errorMessage = ''; // Anfangs leer
+
+
+    function listTeams() {
+        vscode.postMessage({
+            type: 'test',
+            value: {
+            }
+        });
+    }
 
     function handleSignIn() {
         vscode.postMessage({
@@ -14,18 +25,28 @@
         });
     }
 
-    function testauthentication() {
-        vscode.postMessage({
-            type: 'test',
-            value: {
+    onMount(() => {
+        window.addEventListener('message', (event): void => {
+            const message = event.data; // The JSON data our extension sent
+            switch (message.type) {
+                case 'onError':
+                    errorMessage = message.value;
+                    break;
             }
         });
-    }
+    });
 
     
 </script>
 
 <style>
+.Errormessage {
+    color: red;
+    font-size: 12px;
+    margin-top: 10px;
+    text-align: center;
+}
+
 .codesphere {
     width: 100%; /* Die Breite des SVG entspricht der Breite des übergeordneten Elements */
     height: auto; /* Die Höhe wird automatisch angepasst, um das Seitenverhältnis beizubehalten */
@@ -246,7 +267,7 @@
     <button type="submit" id="signin-commit-button" on:click={handleSignIn}>
         Sign in
     </button>
-    <p class="error-commit hidden"></p>
-
-    <button on:click={testauthentication}>List Teams</button>
+    <p id="Errormessage" class="Errormessage" >{errorMessage}</p>
+    <button on:click={listTeams}>test</button>
 </div>
+

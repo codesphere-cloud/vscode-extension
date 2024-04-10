@@ -28,17 +28,23 @@ function signIn(email: string, password: string, callback: (error: any, sessionI
       json: requestData
   }, (error, response, body) => {
       if (error) {
-        console.log('error', error);
-          callback(error); // Fehler an die Callback-Funktion übergeben
+        console.log('error1', error);
+        
+          callback(new Error(body.errMessage)); // Fehler an die Callback-Funktion übergeben
           return;
       }
 
       if (response.statusCode === 200) {
         console.log('body', body);
+          if (body.code === "Error") {
+              callback(new Error(body.errMessage)); // Fehler an die Callback-Funktion übergeben
+              return;
+          }
           const sessionId = body.data.sessionId;
           callback(null, sessionId); // sessionId an die Callback-Funktion übergeben
       } else {
-          callback(new Error('Failed to sign in')); // Fehler an die Callback-Funktion übergeben
+        console.log('error3', response);
+          callback(new Error(response.statusMessage)); // Fehler an die Callback-Funktion übergeben
       }
   });
 
@@ -62,6 +68,7 @@ function genAccessToken(sessionId: string, callback: (error: any, accessToken?: 
   }, (error, response, body) => {
       if (error) {
         console.log('error', error);
+        console.log('body', body);
         callback(error);
           vscode.window.showErrorMessage('An error occurred while generating access token: ' + error.message);
           return;
@@ -76,7 +83,7 @@ function genAccessToken(sessionId: string, callback: (error: any, accessToken?: 
 
       } else {
           vscode.window.showErrorMessage('Failed to generate access token: ' + body.errMessage);
-          callback(new Error('Failed to generate access token'));
+          callback(new Error(body.errMessage));
       }
   });
 }
@@ -100,6 +107,8 @@ async function listTeams(accessToken: string, callback: (error: Error | null, te
 console.error(`Fehler beim Abrufen der Teams: ${error.message}`);
 }
 }
+
+
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   _view?: vscode.WebviewView;
@@ -147,7 +156,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         
           signIn(data.value.email, data.value.password, async (error, sessionId) => {
             if (error) {
+              console.log('error2', error);
               vscode.window.showErrorMessage('An error occurred while signing in: ' + error.message);
+              this._view?.webview.postMessage({ type: "onError", value: error.message });
               return;
             }
         
@@ -166,10 +177,13 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
               }
       
               this.extensionContext.secrets.store("codesphere.accessToken", accessToken as string);
-      
-              const actualAccessToken = await this.extensionContext.secrets.get("codesphere.accessToken");
+
       
               vscode.window.showInformationMessage(`Successfully generated access token`);
+              // After successful sign in, update the webview content
+              webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
+              // After the user has successfully logged in
+              vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
             });
           });
           break;
@@ -191,13 +205,33 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           vscode.window.showInformationMessage(data.value);
           break;
         }
+        case "logout": {
+          if (!data.value) {
+            return;
+          }
+          this.extensionContext.secrets.delete("codesphere.sessionId");
+          this.extensionContext.secrets.delete("codesphere.accessToken");
+
+          vscode.window.showInformationMessage("Successfully logged out");
+          // After successful sign in, update the webview content
+          webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+          break;
         }
+        }
+        
       });
     }
+      public updateWebviewContent() {
+        if (this._view) {
+          this._view.webview.html = this._getHtmlForWebview(this._view.webview);
+        }
+      }
 
-  public revive(panel: vscode.WebviewView) {
-    this._view = panel;
-  }
+      
+
+    public revive(panel: vscode.WebviewView) {
+      this._view = panel;
+    }
 
   private _getHtmlForWebview(webview: vscode.Webview) {
     const styleResetUri = webview.asWebviewUri(
@@ -208,6 +242,48 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     );
     const styleMainUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "out", "compiled/sidebar.css")
+    );
+    const styleVSCodeUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "media", "vscode.css")
+    );
+
+    // Use a nonce to only allow a specific script to be run.
+    const nonce = getNonce();
+
+    return `<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<!--
+					Use a content security policy to only allow loading images from https or from our extension directory,
+					and only allow scripts that have a specific nonce.
+        -->
+        <meta http-equiv="Content-Security-Policy" content="img-src https: data:; style-src 'unsafe-inline' ${
+      webview.cspSource
+    }; script-src 'nonce-${nonce}';">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<link href="${styleResetUri}" rel="stylesheet">
+				<link href="${styleVSCodeUri}" rel="stylesheet">
+        <link href="${styleMainUri}" rel="stylesheet">
+        <script nonce="${nonce}">
+          const vscode = acquireVsCodeApi();
+        </script>
+			</head>
+      <body>
+				<script nonce="${nonce}" src="${scriptUri}"></script>
+			</body>
+			</html>`;
+  }
+
+  private _getHtmlForWebviewAfterSignIn(webview: vscode.Webview) {
+    const styleResetUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "media", "reset.css")
+    );
+    const scriptUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "out", "compiled/codesphere.js")
+    );
+    const styleMainUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "out", "compiled/codesphere.css")
     );
     const styleVSCodeUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "media", "vscode.css")
