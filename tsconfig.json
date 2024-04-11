@@ -17,4 +17,7 @@
 		"node_modules",
 		"webviews"
 	],
+	"include": [
+		"src/ts/getNonce.ts" // Add the missing file path here
+	]
 }

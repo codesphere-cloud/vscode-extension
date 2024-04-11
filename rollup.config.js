@@ -1,6 +1,6 @@
 import svelte from "rollup-plugin-svelte";
 import svg from "rollup-plugin-svg";
-import resolve from "@rollup/plugin-node-resolve";
+import resolve  from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import { terser } from "rollup-plugin-terser";
 import sveltePreprocess from "svelte-preprocess";

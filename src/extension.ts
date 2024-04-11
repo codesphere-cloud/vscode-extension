@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { HelloWorldPanel } from './HelloWorldPanel';
 import { SidebarProvider } from './SidebarProvider';
+import { reloadCache } from './ts/reloadCache';
 const axios = require('axios');
 
 
@@ -17,40 +17,26 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-	vscode.commands.registerCommand('codesphere.notLoggedIn', () => {
-	  vscode.window.showInformationMessage('You need to log in to use this feature.');
-	})
-  );
-	
-	context.subscriptions.push(
-		vscode.commands.registerCommand('codesphere.helloWorld', () => {
-			HelloWorldPanel.createOrShow(context.extensionUri);
-	})
-	);
-
-	context.subscriptions.push(
-		vscode.commands.registerCommand('codesphere.refresh', () => {
-			HelloWorldPanel.kill();
-			HelloWorldPanel.createOrShow(context.extensionUri);
-			setTimeout(() => {
-
-			vscode.commands.executeCommand('workbench.action.webview.openDeveloperTools');
-			}, 500);
-		})
-	);
-
-	context.subscriptions.push(
-		vscode.commands.registerCommand("codesphere.askQuestion", () => {
-			vscode.window.showInformationMessage("How was your day?", "good", "bad").then((response) => {
-				if (response === "good") {
-					vscode.window.showInformationMessage("That's great to hear!");
-				} else if (response === "bad") {
-					vscode.window.showInformationMessage("That's too bad.");
+	vscode.commands.registerCommand('codesphere.reload', async () => {
+		vscode.window.showInformationMessage('you are about to reload the cache');
+		const accessToken = await context.secrets.get("codesphere.accessToken");
+		if (accessToken) {
+			reloadCache(accessToken, (error, teams, workspaces, userData) => {
+				if (error) {
+					vscode.window.showErrorMessage('An error occurred while reloading cache: ' + error.message);
+					return;
 				}
+				console.log('teams', JSON.stringify(teams), 'workspaces', JSON.stringify(workspaces), 'userData', JSON.stringify(userData));
+				context.globalState.update("codesphere.teams", teams);
+				context.globalState.update("codesphere.workspaces", workspaces);
+				context.globalState.update("codesphere.userData", userData);
+				vscode.window.showInformationMessage(`Successfully reloaded cache`);
+				vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction', 'codesphere-sidebar');
 			});
-		})
-	);
-
+		} else {
+			vscode.window.showErrorMessage('Access token is undefined');
+		}
+	}));
 	
 
 	context.subscriptions.push(

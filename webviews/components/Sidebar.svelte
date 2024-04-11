@@ -8,14 +8,6 @@
     let errorMessage = ''; // Anfangs leer
 
 
-    function listTeams() {
-        vscode.postMessage({
-            type: 'test',
-            value: {
-            }
-        });
-    }
-
     function handleSignIn() {
         vscode.postMessage({
             type: 'signin',
@@ -268,6 +260,5 @@
         Sign in
     </button>
     <p id="Errormessage" class="Errormessage" >{errorMessage}</p>
-    <button on:click={listTeams}>test</button>
 </div>
 
