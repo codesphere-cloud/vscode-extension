@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import { getNonce } from "./ts/getNonce";
 import { signIn, genAccessToken } from "./ts/authentication";
 import { listTeams, listWorkspaces, getUserData } from "./ts/userDataRequests";
+const { setupWs, request, waitForWorkspaceRunning, getUaSocket, getDsSocket } = require('./ts/wsService');
+import * as wsLib from 'ws';
 
 
 
@@ -29,7 +31,44 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     cache.setKeysForSync(["codesphere.teams", "codesphere.workspaces", "codesphere.userData"]);
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
+      let socket: any;
+      let uaSocket = getUaSocket();
+
       switch (data.type) {
+        case "opensocket": {
+          if (!data.value) {
+            return;
+          }
+          const socketURL = 'wss://2.codesphere.com/workspace-proxy';
+          const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
+          socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken) as WebSocket;
+
+          uaSocket = getUaSocket();
+
+          await request(uaSocket, "terminalSessionsStream", { workspaceId: 55894 }, "terminalSessionsStream", 2);
+          
+         ;
+
+         // Warte auf die Antwort des vorherigen Requests und extrahiere den tmuxSessionName
+          const terminalSessionsResponse = await request(uaSocket, "createTmuxSession", { workspaceId: 55894 }, "workspace-proxy", 3)
+          console.log(terminalSessionsResponse.data.name);
+          const tmuxSessionName = terminalSessionsResponse.data.name;
+
+         await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: 55894, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 4);
+
+
+          break;
+        }
+
+        case "sendTerminal": {
+          if (!data.value) {
+            return;
+          }
+          await request(uaSocket, "terminalStream", { method: "data", data: data.value }, "workspace-proxy", 4);
+          await request(uaSocket, "terminalStream", { method: "data", data: "\r" }, "workspace-proxy", 4);
+
+          break;
+        }
     
         case "onInfo": {
           if (!data.value) {

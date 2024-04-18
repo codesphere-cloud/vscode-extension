@@ -6,12 +6,28 @@
     let teamArray = [];
     let user = {};
     let workspaceArray = [];
+    let texti = '';
 
     function listTeams() {
         vscode.postMessage({
             type: 'listTeams',
             value: {
             }
+        });
+    }
+
+    function openSocket() {
+        vscode.postMessage({
+            type: 'opensocket',
+            value: {
+            }
+        });
+    }
+
+    function sendTerminal() {
+        vscode.postMessage({
+            type: 'sendTerminal',
+            value: texti
         });
     }
 
@@ -66,6 +82,10 @@
             console.log(`teamArray: ${workspaceArray}`);
         });
     });
+
+    function toggleDropdown(event) {
+        console.log(event.target);
+    }
 </script>
 
 <style>
@@ -107,6 +127,69 @@
         height: 40px;
         border-radius: 50%;
     }
+
+    .workspace {
+        margin-left: 40px;
+        cursor: pointer;
+    }
+
+    .workspaceList {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    button.connect {
+        border: none;
+        padding: 5px;
+        width: 100px;
+        text-align: center;
+        outline: 1px solid transparent;
+        outline-offset: 2px !important;
+        color: var(--vscode-button-foreground);
+        background: var(--vscode-button-background);
+    }
+
+    .workspaceBox {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .form-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+    gap: 10px;
+    max-width: 400px;
+}
+
+
+.email-container {
+        position: relative;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .icon-left {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none; /* Damit das Icon nicht anklickbar ist */
+    }
+
+    .icon-left svg {
+        height: 20px; /* Hier können Sie die Höhe des Icons anpassen */
+        width: auto;
+    }
+
+    .email-input,
+    .password-input {
+        padding-left: 40px; /* Platz für das Icon */
+    }
 </style>
 
 <div>
@@ -126,19 +209,47 @@
                 <h2>{team.name}</h2>
             </div>
             <!-- Zugriff auf zusätzliche Daten mit team.id als Schlüssel -->
-            {#if workspaceArray[team.id]}
-                {#each workspaceArray[team.id] as workspace}
-                    <p>{workspace.name}</p>
-                    <!-- Weitere zusätzliche Informationen für den Workspace -->
-                    <!-- Sie können hier weitere Daten wie dataCenterId, gitUrl, etc. rendern -->
-                {/each}
-            {/if}
+            <div class="workspaceList">
+                {#if workspaceArray[team.id]}
+                    {#each workspaceArray[team.id] as workspace}
+                        <div class="workspaceBox">
+                            <a class="workspace" on:click={toggleDropdown} on:keydown|preventDefault={toggleDropdown} role="button" href="#">{workspace.name}</a>
+                            <!-- Weitere zusätzliche Informationen für den Workspace -->
+                            <!-- Sie können hier weitere Daten wie dataCenterId, gitUrl, etc. rendern -->
+                            <button class="connect" on:click={() => connectTunnel(workspace.name)}>connect</button>                        </div>
+                    {/each}
+                {/if}
+            </div>
         </div>
         <!--Trennstrich-->
         <hr class="Trennstrich">
     {/each}
       
-      
+
+    <div class="form-container">
+        <div class="email-container">
+            <i class="icon-left">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 16" height="16" width="16">
+                    <g clip-path="url(#clip0)">
+                        <path fill="#814BF6" d="M14 1H2C1.46957 1 0.960859 1.21071 0.585786 1.58579C0.210714 1.96086 0 2.46957 0 3L0 3.4L8 7.9L16 3.5V3C16 2.46957 15.7893 1.96086 15.4142 1.58579C15.0391 1.21071 14.5304 1 14 1Z"></path>
+                        <path fill="#814BF6" d="M7.5 9.89995L0 5.69995V13C0 13.5304 0.210714 14.0391 0.585786 14.4142C0.960859 14.7892 1.46957 15 2 15H14C14.5304 15 15.0391 14.7892 15.4142 14.4142C15.7893 14.0391 16 13.5304 16 13V5.69995L8.5 9.89995C8.3424 9.96919 8.17214 10.0049 8 10.0049C7.82786 10.0049 7.6576 9.96919 7.5 9.89995Z"></path>
+                    </g>
+                    <defs>
+                        <clipPath id="clip0">
+                            <rect fill="white" height="16" width="16"></rect>
+                        </clipPath>
+                    </defs>
+                </svg>
+            </i>
+            <input placeholder="Email" autocomplete="email" type="email" class="email-input" id="email-signin" bind:value={texti}>
+        </div>
+    </div>
+    <button type="submit" id="signin-commit-button" on:click={openSocket}>
+        execute
+    </button>
+    <button type="submit" id="signin-commit-button" on:click={sendTerminal}>
+        send Terminal
+    </button>
       
     
 </div>

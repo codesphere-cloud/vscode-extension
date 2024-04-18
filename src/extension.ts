@@ -16,6 +16,20 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
+  const requiredExtensionId = 'ms-vscode.remote-server';
+    const requiredExtension = vscode.extensions.getExtension(requiredExtensionId);
+
+    if (!requiredExtension) {
+        vscode.window.showInformationMessage(
+            'The required extension is not installed. Click Install to install it now.',
+            'Install'
+        ).then(selection => {
+            if (selection === 'Install') {
+                vscode.commands.executeCommand('workbench.extensions.installExtension', requiredExtensionId);
+            }
+        });
+    }
+
   context.subscriptions.push(
 	vscode.commands.registerCommand('codesphere.reload', async () => {
 		vscode.window.showInformationMessage('you are about to reload the cache');

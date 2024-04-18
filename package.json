@@ -81,6 +81,11 @@
       }
     ]
   },
+  "extensionPack": [
+    "ms-vscode-remote.remote-ssh",
+    "ms-vscode-remote.remote-containers",
+    "ms-vscode-remote.remote-wsl"
+  ],
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
@@ -103,10 +108,12 @@
     "@types/request": "^2.48.12",
     "@types/vscode": "^1.87.0",
     "@types/vscode-webview": "^1.57.5",
+    "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "^7.4.0",
     "@typescript-eslint/parser": "^7.4.0",
     "@vscode/test-cli": "^0.0.8",
     "@vscode/test-electron": "^2.3.9",
+    "cloudflared": "^0.5.1",
     "concurrently": "^8.2.2",
     "eslint": "^8.57.0",
     "fs": "^0.0.1-security",
@@ -122,7 +129,8 @@
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.91.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "ws": "^8.16.0"
   },
   "dependencies": {
     "axios": "^1.6.8",
