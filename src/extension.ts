@@ -71,6 +71,12 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	  );
 
+	  context.subscriptions.push(
+		vscode.commands.registerCommand('codesphere.copycode', async () => {
+			vscode.window.showInformationMessage("Code copied!");
+		})
+	  );
+
 	  
 };
 

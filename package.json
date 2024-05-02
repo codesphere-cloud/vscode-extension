@@ -2,7 +2,7 @@
   "name": "codesphere",
   "displayName": "codesphere",
   "description": "Use Codesphere in vscode",
-  "version": "0.0.1",
+  "version": "0.0.6",
   "engines": {
     "vscode": "^1.87.0"
   },
@@ -54,30 +54,19 @@
         "category": "Codesphere"
       },
       {
+        "command": "codesphere.copycode",
+        "title": "Copy code",
+        "category": "Codesphere"
+      },
+      {
         "command": "codesphere.reload",
         "title": "refresh",
         "icon": "$(refresh)",
         "category": "Codesphere"
       },
       {
-        "command": "codesphere.helloWorld",
-        "title": "Hello World"
-      },
-      {
-        "command": "codesphere.askQuestion",
-        "title": "Codesphere aks ask question"
-      },
-      {
         "command": "codesphere.refresh",
         "title": "refresh all webviews"
-      },
-      {
-        "command": "codesphere.authenticate",
-        "title": "Authentication"
-      },
-      {
-        "command": "codesphere.test",
-        "title": "test authentication"
       }
     ]
   },

@@ -13,6 +13,6 @@ export async function reloadCache(accessToken: string, callback: (error: Error |
 
         callback(null, team, workspaces, userData);
     } catch (error) {
-        callback(error, [], {}, []);
+        callback(error as Error, [], {}, []);
     }
 }

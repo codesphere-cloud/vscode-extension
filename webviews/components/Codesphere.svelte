@@ -7,6 +7,9 @@
     let user = {};
     let workspaceArray = [];
     let texti = '';
+    let code = '';
+    let workspaceToConnect = '';
+    let activeWorkspaces = [];
 
     function listTeams() {
         vscode.postMessage({
@@ -16,18 +19,21 @@
         });
     }
 
-    function openSocket() {
+    function openSocket(workspaceId, workspaceName) {
         vscode.postMessage({
             type: 'opensocket',
             value: {
+                workspaceId: workspaceId,
+                workspaceName: workspaceName
             }
         });
     }
 
-    function sendTerminal() {
+    function openTunnel() {
         vscode.postMessage({
-            type: 'sendTerminal',
-            value: texti
+            type: 'openTunnel',
+            value: {
+            }
         });
     }
 
@@ -47,9 +53,18 @@
         });
     }
 
+    function getActiveWorkspaces() {
+        vscode.postMessage({
+            type: 'getActiveWorkspaces',
+            value: {
+            }
+        });
+    }
+
     onMount(listTeams);
     onMount(getUserData);
     onMount(getWorkspaces);
+    onMount(getActiveWorkspaces);
 
     onMount(() => {
         
@@ -77,15 +92,58 @@
                     user = JSON.parse(message.value);
                     console.log(`${user} type user: ${typeof user}`);
                     break;
+                case 'activeWorkspaces':
+                    // define code which will affect the DOM depending on the message
+                    console.log(`${message.value} type user: ${typeof message.value}`);
+                    activeWorkspaces = message.value;
+                    break;
+                case 'gitHubAuth':
+                    // define code which will affect the DOM depending on the message
+                    code = message.value.code;
+                    workspaceToConnect = message.value.state;
+                    console.log(`${code} type user: ${typeof code}`);
+                    break;
+                case 'is connected':
+                    // define code which will affect the DOM depending on the message
+                    workspaceToConnect = '';
+                    activeWorkspaces = message.value.activeTunnels;
+                    console.log(`activeWorkspaces: ${activeWorkspaces}`);
+                    break;
                 
             }
             console.log(`teamArray: ${workspaceArray}`);
-        });
+        });    
     });
 
-    function toggleDropdown(event) {
-        console.log(event.target);
+    function toggleAccordion(teamId) {
+        const teamIndex = teamArray.findIndex(team => team.id === teamId);
+        teamArray[teamIndex].open = !teamArray[teamIndex].open;
     }
+
+    function copyCode() {
+        // Code-Element auswählen
+        var codeBox = document.getElementById("codeBox");
+
+        // Text im Code-Element auswählen
+        var selection = window.getSelection();
+        var range = document.createRange();
+        range.selectNodeContents(codeBox);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        // Text in die Zwischenablage kopieren
+        document.execCommand("copy");
+
+        // Selektion aufheben
+        selection.removeAllRanges();
+
+        vscode.postMessage({
+            type: 'copycode',
+            value: {
+            }
+        });
+    }
+    
 </script>
 
 <style>
@@ -131,12 +189,15 @@
     .workspace {
         margin-left: 40px;
         cursor: pointer;
+        font-size: 15px;
     }
 
     .workspaceList {
         display: flex;
         flex-direction: column;
         gap: 10px;
+        overflow-x: auto;
+        white-space: nowrap;
     }
 
     button.connect {
@@ -155,41 +216,66 @@
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-        gap: 10px;
-    }
-
-    .form-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: left;
-    gap: 10px;
-    max-width: 400px;
-}
-
-
-.email-container {
-        position: relative;
-        width: 100%;
         margin-bottom: 10px;
     }
 
-    .icon-left {
-        position: absolute;
-        left: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        pointer-events: none; /* Damit das Icon nicht anklickbar ist */
+    .codeProvider {
+        display: flex;
+        flex-direction: column;
+        justify-content:space-evenly;
+        gap: 10px;
+        border: 1px solid white;
+        border-radius: 5px;
+        padding: 4px;
+        margin: 30px;
     }
 
-    .icon-left svg {
-        height: 20px; /* Hier können Sie die Höhe des Icons anpassen */
-        width: auto;
+    .codeProviderInside {
+        display: flex;
+        flex-direction: column;
+        font-size: 15px;
     }
 
-    .email-input,
-    .password-input {
-        padding-left: 40px; /* Platz für das Icon */
+    .spaceForLink {
+        margin-bottom: 5px;
     }
+
+    .accordion-content {
+        display: none;
+    }
+    .accordion-content.show {
+        display: block;
+    }
+
+    .workspace-span {
+        font-size: 20px;
+        margin-right: 15px;
+    }
+
+    .icon {
+        font-size: 24px; /* Größe des Icons */
+        cursor: pointer;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+    }
+
+    .icon:hover {
+        background-color: rgb(43, 44, 44);
+    }
+
+    /* CSS für den Text */
+    .codeBox {
+        margin-right: 10px; /* Optional: Abstand zwischen Text und Icon */
+    }
+
+    .codeAndIcon {
+        display: flex; 
+        flex-direction: row;
+        align-items: center; 
+        justify-content: start;
+    }
+
+
 </style>
 
 <div>
@@ -200,56 +286,68 @@
 
     {#each teamArray as team (team.id)}
         <div class="teamTree" key={team.id}>
-            <div class="teams">
+            <div class="teams" on:click={() => toggleAccordion(team.id)} role="presentation">
                 {#if team.avatarUrl}
                 <img src={team.avatarUrl} alt="Team Avatar" class="workspaceAvatar">
             {:else}
                 <img src="https://cdn-icons-png.flaticon.com/512/4231/4231148.png" alt="Default Avatar" class="workspaceAvatar">
             {/if}
-                <h2>{team.name}</h2>
+                
+                <h2 class="">{team.name}</h2>
+                <!-- Toggle arrow icon -->
+                {#if team.open}
+                    <span>▲</span>
+                {:else}
+                    <span>▼</span>
+                {/if}
+                
             </div>
             <!-- Zugriff auf zusätzliche Daten mit team.id als Schlüssel -->
-            <div class="workspaceList">
+            <div class="workspaceList accordion-content" class:show={team.open}>
                 {#if workspaceArray[team.id]}
                     {#each workspaceArray[team.id] as workspace}
                         <div class="workspaceBox">
-                            <a class="workspace" on:click={toggleDropdown} on:keydown|preventDefault={toggleDropdown} role="button" href="#">{workspace.name}</a>
+                            
+                            <p class="workspace"><span class="workspace-span">•</span>{workspace.name}</p>
                             <!-- Weitere zusätzliche Informationen für den Workspace -->
                             <!-- Sie können hier weitere Daten wie dataCenterId, gitUrl, etc. rendern -->
-                            <button class="connect" on:click={() => connectTunnel(workspace.name)}>connect</button>                        </div>
+                            <button class="connect" on:click={() => openSocket(workspace.id, workspace.name)}>connect</button>    
+                        </div>
+                        {#if workspaceToConnect === workspace.id}
+                            <div class="codeProvider">
+                                <div class="codeProviderInside">
+                                    <p class="spaceForLink">please use this link</p>
+                                    <a href="https://github.com/login/device">https://github.com/login/device</a>
+                                </div>
+                                <div class="codeProviderInside">
+                                    <p>and use this code</p>
+                                    <p class="spaceForLink"></p>
+                                    <div class="codeAndIcon">
+                                        <p class="codeBox" id="codeBox">{code}</p>
+                                        <div class="icon" on:click={() => copyCode()} role="presentation">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {/if}
+                        {#if activeWorkspaces.includes(workspace.id)}
+                            <div class="codeProvider">
+                                <div class="codeProviderInside">
+                                    <p class="spaceForLink">You are connected to this workspace</p>
+                                    <p>open connection here</p>
+                                    <button on:click= {() => openTunnel()}> open connection
+                                    </button>
+                                </div>
+                            </div>
+                        {/if}
                     {/each}
                 {/if}
             </div>
         </div>
         <!--Trennstrich-->
         <hr class="Trennstrich">
-    {/each}
-      
-
-    <div class="form-container">
-        <div class="email-container">
-            <i class="icon-left">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 16" height="16" width="16">
-                    <g clip-path="url(#clip0)">
-                        <path fill="#814BF6" d="M14 1H2C1.46957 1 0.960859 1.21071 0.585786 1.58579C0.210714 1.96086 0 2.46957 0 3L0 3.4L8 7.9L16 3.5V3C16 2.46957 15.7893 1.96086 15.4142 1.58579C15.0391 1.21071 14.5304 1 14 1Z"></path>
-                        <path fill="#814BF6" d="M7.5 9.89995L0 5.69995V13C0 13.5304 0.210714 14.0391 0.585786 14.4142C0.960859 14.7892 1.46957 15 2 15H14C14.5304 15 15.0391 14.7892 15.4142 14.4142C15.7893 14.0391 16 13.5304 16 13V5.69995L8.5 9.89995C8.3424 9.96919 8.17214 10.0049 8 10.0049C7.82786 10.0049 7.6576 9.96919 7.5 9.89995Z"></path>
-                    </g>
-                    <defs>
-                        <clipPath id="clip0">
-                            <rect fill="white" height="16" width="16"></rect>
-                        </clipPath>
-                    </defs>
-                </svg>
-            </i>
-            <input placeholder="Email" autocomplete="email" type="email" class="email-input" id="email-signin" bind:value={texti}>
-        </div>
-    </div>
-    <button type="submit" id="signin-commit-button" on:click={openSocket}>
-        execute
-    </button>
-    <button type="submit" id="signin-commit-button" on:click={sendTerminal}>
-        send Terminal
-    </button>
-      
-    
+    {/each}    
 </div>
