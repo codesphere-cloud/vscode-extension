@@ -2,7 +2,7 @@
   "name": "codesphere",
   "displayName": "codesphere",
   "description": "Use Codesphere in vscode",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "engines": {
     "vscode": "^1.87.0"
   },

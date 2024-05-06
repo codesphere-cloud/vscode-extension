@@ -161,7 +161,7 @@ const serverIsUp = async (deploymentSocket: any, cache: any, workspaceName:any, 
     return new Promise<void>((resolve, reject) =>  {
         const messageHandler = (msg: any) => {
             const msgTest = msg.toString();
-            if (msgTest.includes(`Creating tunnel with the name: ${workspaceName.toLowerCase()}`)) {
+            if (msgTest.includes(`Creating tunnel with the name: ${workspaceName}`)) {
                 deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
                 resolve(); // Kein Argument erforderlich
             }
@@ -181,7 +181,7 @@ const afterTunnelInit = async (deploymentSocket: any, workspaceName: any) => {
     return new Promise<void>((resolve, reject) =>  {
         const messageHandler = (msg: any) => {
             const msgTest = msg.toString();
-            if (msgTest.includes(`Open this link in your browser https://vscode.dev/tunnel/${workspaceName.toLowerCase()}/home/user/app`)) {
+            if (msgTest.includes(`Open this link in your browser https://vscode.dev/tunnel/${workspaceName}/home/user/app`)) {
                 deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
                 resolve(); // Kein Argument erforderlich
             }
@@ -196,6 +196,26 @@ const afterTunnelInit = async (deploymentSocket: any, workspaceName: any) => {
         deploymentSocket.on("error", errorHandler);
     });
 };
+
+const tunnelIsReady = async (deploymentSocket: any) => {
+    return new Promise<void>((resolve, reject) =>  {
+        const messageHandler = (msg: any) => {
+            const msgTest = msg.toString();
+            if (msgTest.includes(`Extension install complete`)) {
+                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+                resolve(); // Kein Argument erforderlich
+            }
+        };
+        // Handler für Fehler
+        const errorHandler = (err: any): void => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        // Hinzufügen von Nachrichten- und Fehlerhandlern
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+}
                 
 module.exports = {
     setupWs,
@@ -204,6 +224,7 @@ module.exports = {
     giveWorkspaceName,
     serverIsUp,
     afterTunnelInit,
+    tunnelIsReady,
     uaSocket,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
