@@ -11,6 +11,8 @@ const { setupWs,
         giveWorkspaceName,
         afterTunnelInit,
         tunnelIsReady,
+        wakeUpWorkspace,
+        existingTunnel,
         serverIsUp } = require('./ts/wsService');
 import { readBashFile } from "./ts/readBash";
 import * as wsLib from 'ws';
@@ -45,6 +47,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(async (data) => {
       let socket: any;
       let uaSocket = getUaSocket();
+      let uaSocket2 = getUaSocket();
 
       switch (data.type) {
         case "opensocket": {
@@ -53,7 +56,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }
           const workspaceId = data.value.workspaceId;
           const workspaceName = data.value.workspaceName;
-          const socketURL = 'wss://2.codesphere.com/workspace-proxy';
+          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
           
@@ -300,6 +303,37 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           this._view?.webview.postMessage({ type: "getWorkspaces", value: `${JSON.stringify(workspaces)}` });
 
           vscode.window.showInformationMessage(data.value);
+          break;
+        }
+
+        case "activateWorkspace": {
+          // wakes up sleeping on-demand workspaces when open workspace accordion in the UI
+          const workspaceId = data.value.workspaceId;
+          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/deployment-service`;
+          const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
+          socket = await setupWs(new wsLib.WebSocket(socketURL), "deployment-service", accessToken, cache, workspaceId);
+          
+
+          uaSocket2 = getUaSocket();
+
+          const codePromise = wakeUpWorkspace(uaSocket2);
+
+          
+          await request(uaSocket2, "info", { workspaceId: workspaceId }, "deployment-service", 2);
+          await request(uaSocket2, "startWorkspace", { workspaceId: workspaceId }, "deployment-service", 3);
+          
+          console.log('we are here!');
+
+          await codePromise.then(async () => {
+            console.log('workspace is up');
+            this._view?.webview.postMessage({ 
+              type: "resourcesDeployed", 
+              value: {   
+                  'workspaceId': workspaceId
+              }
+            });
+          });
+
           break;
         }
         case "getUserData": {

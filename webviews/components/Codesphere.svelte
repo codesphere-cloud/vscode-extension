@@ -11,6 +11,8 @@
     let activeWorkspaces = [];
     let animateCircles = false; // Zustand für die Animation
     let creatingTunnel = {};
+    let notDeployedWorkspaces = [];
+    let indexOfWorkspace;
 
     function listTeams() {
         vscode.postMessage({
@@ -20,7 +22,7 @@
         });
     }
 
-    function openSocket(workspaceId, workspaceName) {
+    function openSocket(workspaceId, workspaceName, teamDatacenterId) {
         creatingTunnel[workspaceId] = "Waiting for authorization..."
         console.log(`creatingTunnel: ${creatingTunnel}`);
 
@@ -28,7 +30,8 @@
             type: 'opensocket',
             value: {
                 workspaceId: workspaceId,
-                workspaceName: workspaceName
+                workspaceName: workspaceName,
+                datacenterId: teamDatacenterId
             }
         });
     }
@@ -115,10 +118,19 @@
                 case 'loading':
                     // sets the state of loading for animation
                     creatingTunnel[message.value.workspaceId] = message.value.state;
+                    if (message.value.state === 'Setting up server...') {
+                        workspaceToConnect = '';
+                    } 
                     break;
                 case 'loadingFinished':
                     // sets the state of loading for animation
                     delete creatingTunnel[message.value.workspaceId];
+                    break;
+                case `resourcesDeployed`:
+                    // sets the state of loading for animation
+                    indexOfWorkspace = notDeployedWorkspaces.indexOf(message.value.workspaceId);
+                    notDeployedWorkspaces.splice(indexOfWorkspace, 1);
+                    notDeployedWorkspaces = [...notDeployedWorkspaces];
                     break;
             }
             console.log(`teamArray: ${workspaceArray}`);
@@ -130,10 +142,25 @@
         teamArray[teamIndex].open = !teamArray[teamIndex].open;
     }
 
-    function toggleWorkspaceAccordion(teamId, workspaceId) {
+    function toggleWorkspaceAccordion(teamId, workspaceId, teamDatacenterId) {
         const teamIndex = teamArray.findIndex(team => team.id === teamId);
         const workspaceIndex = workspaceArray[teamId].findIndex(workspace => workspace.id === workspaceId);
         workspaceArray[teamId][workspaceIndex].open = !workspaceArray[teamId][workspaceIndex].open;
+
+        notDeployedWorkspaces = [...notDeployedWorkspaces, workspaceId];
+
+        console.log(`teamDatacenterId: ${teamDatacenterId}`);
+
+        console.log(`notDeployedWorkspaces: ${notDeployedWorkspaces}`);
+
+        // get this workspace alive when it is on-demand and inactive
+        vscode.postMessage({
+            type: 'activateWorkspace',
+            value: {
+                workspaceId: workspaceId,
+                datacenterId: teamDatacenterId
+            }
+        });
     }
 
     function copyCode() {
@@ -231,7 +258,7 @@
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
     }
 
     .codeProvider {
@@ -242,7 +269,6 @@
         border: 1px solid grey;
         border-radius: 5px;
         padding: 10px;
-        margin: 10px 0 10px 0;
     }
 
     .codeProviderInside {
@@ -375,8 +401,8 @@
         flex-direction: column;
         gap: 5px;
         margin-left: 60px;
-        margin-top: 20px;
-        margin-bottom: 20px;
+        margin-top: 10px;
+        margin-bottom: 5px;
     }
 
 
@@ -411,22 +437,36 @@
                     {#each workspaceArray[team.id] as workspace}
                         <div class="workspaceBox">
                             <!-- Hier Workspace-Informationen -->
-                            <div class="workspaceAccordion" on:click={() => toggleWorkspaceAccordion(team.id, workspace.id)} role="presentation">
-                                <p class="workspace">
+                            <div class="workspaceAccordion" on:click={() => toggleWorkspaceAccordion(team.id, workspace.id, team.defaultDataCenterId)} role="presentation">
+                                <p class="workspace" style="color: {activeWorkspaces.includes(workspace.id) ? 'green' : 'inherit'}">
                                     <!-- Toggle arrow icon -->
-                                {#if workspace.open}
-                                    <span>▼</span>
-                                {:else}
-                                    <span>►</span>
-                                {/if}
+                                    {#if workspace.open}
+                                        <span>▼</span>
+                                    {:else}
+                                        <span>►</span>
+                                    {/if}
                                     {workspace.name}
                                 </p>
                             </div>
                             <div class="workspaceAccordion-content" class:show={workspace.open}>
                                 <!-- Hier weitere Details zum Workspace -->
                                 <!-- z.B. Buttons, Links usw. -->
-                                {#if !creatingTunnel[workspace.id] && !activeWorkspaces.includes(workspace.id)}
-                                    <button class="connect" on:click={() => openSocket(workspace.id, workspace.name)}>create tunnel</button>
+                                {#if notDeployedWorkspaces.includes(workspace.id)}
+                                    <div class="animation-container">
+                                        <div class="circle-container">
+                                            <div class="inner-circle" class:animate={animateCircles}></div>
+                                            <div class="outer-circle" class:animate={animateCircles}></div>
+                                        </div>
+                                        <p>Connecting to workspace...</p>
+                                    </div>
+                                    {#if animateCircles} <!-- Nur wenn die Animation aktiv ist -->
+                                        <script>
+                                            startAnimation(); // Starte die Animation
+                                        </script>
+                                    {/if}
+                                {/if}
+                                {#if !creatingTunnel[workspace.id] && !activeWorkspaces.includes(workspace.id) && !notDeployedWorkspaces.includes(workspace.id)}
+                                    <button class="connect" on:click={() => openSocket(workspace.id, workspace.name, team.defaultDataCenterId)}>create tunnel</button>
                                 {/if} 
 
                                 {#if creatingTunnel[workspace.id]}
@@ -465,11 +505,10 @@
                                         </div>
                                     </div>
                                 {/if}
-                                {#if activeWorkspaces.includes(workspace.id)}
+                                {#if activeWorkspaces.includes(workspace.id) && !notDeployedWorkspaces.includes(workspace.id)}
                                     <div class="codeProvider">
                                         <div class="codeProviderInside">
                                             <p class="spaceForLink">You are connected to this workspace</p>
-                                            <p>open connection here</p>
                                             <button on:click= {() => openTunnel()}> open connection
                                             </button>
                                         </div>

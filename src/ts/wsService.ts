@@ -53,6 +53,23 @@ const setupWs = (ws: any, name: string, accessToken: undefined, cache:any, works
             }
         }));
 
+        if (name === "deployment-service") {
+            uaSocket = ws;  // Update the reference to the current WebSocket for "user-activity"
+          }
+
+        // send authentication message to authenticate the websocket
+        ws.send(JSON.stringify({
+            method: "setClientContext",
+            endpointId: 1,
+            args: {
+                requestHeaders: {
+                    Authorization: `Bearer ${accessToken}`
+                },
+                responseHeaders: {},
+                httpStatusCode: 200
+            }
+        }));
+
     });
 
     ws.on("message", (data: { toString: () => any; }) => {
@@ -177,6 +194,26 @@ const serverIsUp = async (deploymentSocket: any, cache: any, workspaceName:any, 
     });
 };
 
+const existingTunnel = async (deploymentSocket: any, cache: any, workspaceName:any, workspaceId: any) => {
+    return new Promise<void>((resolve, reject) =>  {
+        const messageHandler = (msg: any) => {
+            const msgTest = msg.toString();
+            if (msgTest.includes(`Connected to an existing tunnel process running on this machine`)) {
+                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+                resolve(); // Kein Argument erforderlich
+            }
+        };
+        // Handler für Fehler
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        // Hinzufügen von Nachrichten- und Fehlerhandlern
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
 const afterTunnelInit = async (deploymentSocket: any, workspaceName: any) => {
     return new Promise<void>((resolve, reject) =>  {
         const messageHandler = (msg: any) => {
@@ -215,7 +252,33 @@ const tunnelIsReady = async (deploymentSocket: any) => {
         deploymentSocket.on("message", messageHandler);
         deploymentSocket.on("error", errorHandler);
     });
-}
+};
+
+const wakeUpWorkspace = async (deploymentSocket: any) => {
+    return new Promise<void>((resolve, reject) => {
+        const messageHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                if (msgTest.includes("Workspace already deployed")) {
+                    deploymentSocket.off("message", messageHandler);
+                    resolve();
+                }
+                
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
                 
 module.exports = {
     setupWs,
@@ -225,7 +288,9 @@ module.exports = {
     serverIsUp,
     afterTunnelInit,
     tunnelIsReady,
+    wakeUpWorkspace,
     uaSocket,
+    existingTunnel,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
 };
