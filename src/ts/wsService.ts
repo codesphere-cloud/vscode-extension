@@ -154,6 +154,37 @@ const waitForWorkspaceRunning = async (deploymentSocket: any, cache: any, worksp
     });
 };
 
+const doesTunnelAlreadyExist = async (deploymentSocket: any) => { 
+    return new Promise((resolve, reject) => {
+        // Handler für Nachrichten
+        const messageHandler = (msg: any) => {
+            const msgTest = msg.toString();
+            if (msgTest.includes("How would you like to log in to Visual Studio Code?")) {
+                resolve('not found');
+                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+            }
+            if (msgTest.includes("Connected to an existing tunnel process running on this machine.")) {
+                resolve('found');
+                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+            }
+            if (msgTest.includes("Open this link in your browser")) {
+                resolve('found-nopid');
+                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+            }
+        };
+
+        // Handler für Fehler
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+
+        // Hinzufügen von Nachrichten- und Fehlerhandlern
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
 const giveWorkspaceName = async (deploymentSocket: any) => {
     return new Promise<void>((resolve, reject) =>  {
         const messageHandler = (msg: any) => {
@@ -179,26 +210,6 @@ const serverIsUp = async (deploymentSocket: any, cache: any, workspaceName:any, 
         const messageHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes(`Creating tunnel with the name: ${workspaceName}`)) {
-                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
-                resolve(); // Kein Argument erforderlich
-            }
-        };
-        // Handler für Fehler
-        const errorHandler = (err: any) => {
-            console.log("Socket exited with error:" + err);
-            reject(err);
-        };
-        // Hinzufügen von Nachrichten- und Fehlerhandlern
-        deploymentSocket.on("message", messageHandler);
-        deploymentSocket.on("error", errorHandler);
-    });
-};
-
-const existingTunnel = async (deploymentSocket: any, cache: any, workspaceName:any, workspaceId: any) => {
-    return new Promise<void>((resolve, reject) =>  {
-        const messageHandler = (msg: any) => {
-            const msgTest = msg.toString();
-            if (msgTest.includes(`Connected to an existing tunnel process running on this machine`)) {
                 deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
                 resolve(); // Kein Argument erforderlich
             }
@@ -279,6 +290,38 @@ const wakeUpWorkspace = async (deploymentSocket: any) => {
         deploymentSocket.on("error", errorHandler);
     });
 };
+
+const getPidFromServer = async (deploymentSocket: any) => {
+    return new Promise<void>((resolve, reject) => {
+        const messageHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                if (msgTest.includes("./code tunnel")) {
+                    const pidRegex = /user\s+(\d+)/i; 
+                    const pidMatch = msgTest.match(pidRegex);
+                    if (pidMatch && pidMatch.length > 1) {
+                        const extractedPid = pidMatch[1];
+                        console.log("Extracted PID: " + extractedPid);
+                        resolve(extractedPid);
+                        deploymentSocket.off("message", messageHandler);
+                    }
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
                 
 module.exports = {
     setupWs,
@@ -290,7 +333,8 @@ module.exports = {
     tunnelIsReady,
     wakeUpWorkspace,
     uaSocket,
-    existingTunnel,
+    doesTunnelAlreadyExist,
+    getPidFromServer,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
 };

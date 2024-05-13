@@ -49,7 +49,7 @@ export async function listTeams(accessToken: string): Promise<any[]> {
             workspaceMap[team.id] = workspaceArrays[index];
         });
 
-        console.log(`${workspaceMap} so sieht das workspaceMap aus`)
+        console.log(`${workspaceMap} so sieht das workspaceMap aus`);
 
         return workspaceMap;
     } catch (error) {

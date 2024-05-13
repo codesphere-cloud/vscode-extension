@@ -1,20 +1,86 @@
 import * as vscode from 'vscode';
 import { SidebarProvider } from './SidebarProvider';
 import { reloadCache } from './ts/reloadCache';
+import { exec } from 'child_process';
 const axios = require('axios');
 
 
 
 export function activate(context: vscode.ExtensionContext) {
-	console.log('Congratulations, your extension "codesphere" is now active!');
-	
+
 	const sidebarProvider = new SidebarProvider(context.extensionUri, context);
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(
-      "codesphere-sidebar",
-      sidebarProvider
-    )
-  );
+
+	const bashcommand = 'echo $WORKSPACE_ID';
+	let workspaceId: string;
+
+	// prüfen ob man sich in einem remote tunnmel befindet. Wenn ja dann wird der ordner angepasst.
+	exec (bashcommand, (error, stdout, stderr) => {	
+		if (error) {
+			console.error(`exec error: ${error}`);
+			return;
+		}
+
+		if (stderr) {
+			console.error(`stderr: ${stderr}`);
+			return;
+		}
+
+		console.log(`stdout: ${stdout}`);
+		workspaceId = stdout ? stdout.trim() : ``;
+
+
+		if (workspaceId !== "") {
+			const pwdbash = `echo $PWD`;
+			let pwd;
+
+			exec (pwdbash, (error, stdout, stderr) => {	
+				if (error) {
+					console.error(`exec error: ${error}`);
+					return;
+				}
+		
+				if (stderr) {
+					console.error(`stderr: ${stderr}`);
+					return;
+				}
+
+				pwd = stdout ? stdout.trim() : '';
+
+				if (pwd !== '' && context.globalState.get("codesphere.currentWorkspace") !== workspaceId) {
+					const pwdUri = vscode.Uri.parse(pwd);
+					vscode.commands.executeCommand('vscode.openFolder', pwdUri);
+					context.globalState.update("codesphere.currentWorkspace", workspaceId);
+				} else {
+					console.error('PWD ist leer.');
+				}
+			});
+		}
+	});
+
+
+
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(
+		"codesphere-sidebar",
+		sidebarProvider
+		)
+	);
+
+	if (!context.globalState.get("codesphere.isLoggedIn") || context.globalState.get("codesphere.isLoggedIn") === false) {
+		vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', false);
+		context.globalState.update("codesphere.isLoggedIn", false);
+		console.log('Congratulations, your extension "codesphere" is now active! Please Log in.');
+	  }
+
+	if (context.globalState.get("codesphere.isLoggedIn") === true) {
+		vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
+		context.globalState.update("codesphere.isLoggedIn", true);
+		console.log('Congratulations, your extension "codesphere" is now active! You are logged in.');
+	}
+
+  	
+
+
 
   const requiredExtensionId = 'ms-vscode.remote-server';
     const requiredExtension = vscode.extensions.getExtension(requiredExtensionId);
@@ -55,10 +121,11 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('codesphere.submenu', async () => {
-			vscode.window.showInformationMessage("Do you want to log out??", "yes", "no").then((response) => {
+			vscode.window.showInformationMessage("Do you want to log out?", "yes", "no").then((response) => {
 				if (response === "yes") {
 					context.secrets.delete('codesphere.accessToken');
 					context.secrets.delete('codesphere.sessionId');
+					context.globalState.update("codesphere.isLoggedIn", false);	
 					sidebarProvider.updateWebviewContent();				
 					vscode.window.showInformationMessage("Sucessfully logged out.");
 					// After the user has successfully logged out

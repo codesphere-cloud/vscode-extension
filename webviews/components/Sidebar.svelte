@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import "vscode-webview"
-    import vscode from "vscode-webview-message";
+    import * as vscode from "vscode";
 
     let email = '';
     let password = '';

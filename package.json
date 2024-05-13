@@ -2,14 +2,16 @@
   "name": "codesphere",
   "displayName": "codesphere",
   "description": "Use Codesphere in vscode",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "engines": {
     "vscode": "^1.87.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {

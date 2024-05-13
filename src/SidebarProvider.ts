@@ -6,18 +6,17 @@ const { setupWs,
         request, 
         waitForWorkspaceRunning, 
         getUaSocket, 
-        killTmuxSession,
-        getDsSocket, 
         giveWorkspaceName,
         afterTunnelInit,
         tunnelIsReady,
         wakeUpWorkspace,
-        existingTunnel,
+        doesTunnelAlreadyExist,
+        getPidFromServer,
         serverIsUp } = require('./ts/wsService');
 import { readBashFile } from "./ts/readBash";
 import * as wsLib from 'ws';
 import { sanitizeWorkspaceName } from "./ts/sanatizeWorkspaceNames";
-const fs = require('fs');
+import axios from 'axios';
 
 
 
@@ -30,6 +29,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
   public resolveWebviewView(webviewView: vscode.WebviewView) {
     this._view = webviewView;
+    let cache = this.extensionContext.globalState;
 
     webviewView.webview.options = {
       // Allow scripts in the webview
@@ -38,18 +38,94 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri],
     };
 
-    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+    if (!cache.get("codesphere.isLoggedIn") || cache.get("codesphere.isLoggedIn") === false) {
+      vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', false);
+      cache.update("codesphere.isLoggedIn", false);
+      webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+      console.log('Congratulations, your extension "codesphere" is now active! Please Log in.');
+    
+      }
+  
+    if (cache.get("codesphere.isLoggedIn") === true) {
+      vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
+      cache.update("codesphere.isLoggedIn", true);
+      webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
+      console.log('Congratulations, your extension "codesphere" is now active! You are logged in.');
+    }
+      
 
-    let cache = this.extensionContext.globalState;
-    cache.update("codesphere.activeTunnelArray", []);
-    cache.setKeysForSync(["codesphere.isLoggedIn", "codesphere.accessTokenCache", "codesphere.teams", "codesphere.workspaces", "codesphere.userData", "codesphere.lastCode", "codesphere.activeTunnelArray"]);
+    
+
+    if (!cache.get("codesphere.isLoggedIn")) {
+      vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', false);
+      cache.update("codesphere.isLoggedIn", false);
+    }
+
+    if (!cache.get("codesphere.accessTokenCache")) {
+      cache.update("codesphere.accessTokenCache", "");
+    }
+
+    if (!cache.get("codesphere.teams")) {
+      cache.update("codesphere.teams", []);
+    }
+
+    if (!cache.get("codesphere.workspaces")) {
+      cache.update("codesphere.workspaces", {});
+    }
+
+    if (!cache.get("codesphere.userData")) {
+      cache.update("codesphere.userData", {});
+    }
+
+    if (!cache.get("codesphere.lastCode")) {
+      cache.update("codesphere.lastCode", "");
+    }
+
+    if (!cache.get("codesphere.activeTunnel")) {
+      cache.update("codesphere.activeTunnel", {});
+    }
+
+    cache.setKeysForSync(["codesphere.isLoggedIn", 
+                          "codesphere.accessTokenCache", 
+                          "codesphere.teams", 
+                          "codesphere.workspaces", 
+                          "codesphere.userData", 
+                          "codesphere.lastCode", 
+                          "codesphere.activeTunnel",
+                          "codesphere.currentWorkspace"]);
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
       let socket: any;
       let uaSocket = getUaSocket();
       let uaSocket2 = getUaSocket();
+      let testSocket: any;
 
       switch (data.type) {
+        case "testConnection": {
+          console.log('testConnection');
+          try {
+              const response = await axios.post('https://codesphere.com/team-service/listTeams', {}, {
+                  headers: {
+                      Authorization: `Bearer ${cache.get("codesphere.accessTokenCache")}`
+                  }
+              });
+      
+              if (response.data.code === "Ok") {
+                  console.log("Token is valid");
+              } else {
+                  webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+                  console.log('Token is invalid');
+                  throw new Error(`Fehler beim Abrufen der Teams: ${response.data.errMessage}`);
+              }
+          } catch (error) {
+            webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+            console.log('Token is invalid');
+
+              throw new Error(`Fehler beim Abrufen der Teams: ${error}`);
+          }
+          
+          break;
+        }
         case "opensocket": {
           if (!data.value) {
             return;
@@ -74,14 +150,99 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
           await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 4);
           
+          
+          let activeTunnel: any= cache.get(`codesphere.activeTunnel`);
+
+          
           const bashFilePath  = vscode.Uri.joinPath(this._extensionUri, "src", "sh", "installVSCodeServer.sh");
           const bashScript = await readBashFile(bashFilePath.fsPath);
           await request(uaSocket, "terminalStream", { method: "data", data: bashScript }, "workspace-proxy", 4);
 
           const codePromise = waitForWorkspaceRunning(uaSocket, cache, workspaceId);
 
-          await request(uaSocket, "terminalStream", { method: "data", data: "[B\r" }, "workspace-proxy", 4);
+          let tunnelExists = await doesTunnelAlreadyExist(uaSocket);
 
+          
+          if (tunnelExists === 'not found') {
+            console.log('not found');
+            
+          } 
+          if (tunnelExists === 'found') {
+            let activeTunnel = JSON.stringify(cache.get(`codesphere.activeTunnel`));
+            console.log('activeTunnel', activeTunnel);
+            let activeTunnnel: Array<any> = JSON.parse(activeTunnel);
+            console.log('activeTunnnel', activeTunnnel);
+            activeTunnnel[workspaceId] = {};
+            console.log('activeTunnnel', activeTunnnel);
+            cache.update(`codesphere.activeTunnel`, activeTunnnel);
+            this._view?.webview.postMessage({ 
+              type: "loadingFinished", 
+              value: {   
+                  'workspaceId': `${workspaceId}`
+              }
+            });
+
+            this._view?.webview.postMessage({ 
+              type: "is connected", 
+              value: {  
+                  'activeTunnels': `${cache.get(`codesphere.activeTunnel`)}`
+              }
+            });
+            vscode.window.showInformationMessage('Server is up');
+            request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 5);
+            break;
+          }
+          if (tunnelExists === 'found-nopid') {
+            const terminalSessionsBgProcess = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
+            console.log(terminalSessionsBgProcess.data.name);
+            const tmuxSessionNameBgProcess = terminalSessionsBgProcess.data.name;
+            
+            await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess }, "workspace-proxy", 7);
+            
+            await request(uaSocket, "terminalStream", { method: "data", data: "nohup ./code tunnel\r" }, "workspace-proxy", 7);
+            await request(uaSocket, "terminalStream", { method: "data", data: "^Z\r" }, "workspace-proxy", 7);
+            await request(uaSocket, "terminalStream", { method: "data", data: "bg\r" }, "workspace-proxy", 7);
+            await request(uaSocket, "terminalStream", { method: "data", data: "disown\r" }, "workspace-proxy", 7);
+  
+            const pidTerminal = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
+            const pidTerminalName = pidTerminal.data.name;
+  
+            await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: pidTerminalName }, "workspace-proxy", 8);
+  
+            await request(uaSocket, "terminalStream", { method: "data", data: "ps aux\r" }, "workspace-proxy", 8);
+  
+            getPidFromServer(uaSocket).then(async (pid: string) => {
+              console.log('pid', pid);
+  
+              let activeTunnel: any = cache.get(`codesphere.activeTunnel`);
+              console.log('activeTunnnel', activeTunnel);
+              activeTunnel[workspaceId] = {};
+              activeTunnel[workspaceId]['pid'] = `${pid}`;
+              console.log('activeTunnnel', activeTunnel);
+              cache.update(`codesphere.activeTunnel`, activeTunnel);
+  
+              await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: pidTerminalName}, "workspace-proxy", 11);
+              await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionNameBgProcess}, "workspace-proxy", 12);
+
+              this._view?.webview.postMessage({ 
+                type: "loadingFinished", 
+                value: {   
+                    'workspaceId': `${workspaceId}`
+                }
+              });
+  
+              this._view?.webview.postMessage({ 
+                type: "is connected", 
+                value: {  
+                    'activeTunnels': `${cache.get(`codesphere.activeTunnel`)}`
+                }
+              });
+              
+            });
+          }
+          console.log('here');
+          await request(uaSocket, "terminalStream", { method: "data", data: "[B\r" }, "workspace-proxy", 4);
+          console.log('there');
           const code = await codePromise;
 
           console.log('bashScript', cache.get(`codesphere.lastCode${workspaceId}`));
@@ -114,17 +275,17 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
         afterTunnelInit(uaSocket, sanitizedName).then (async () => {
           await request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-          await request(uaSocket, "terminalStream", { method: "data", data: "./code tunnel --install-extension codesphere-0.0.7.vsix\r"}, "workspace-proxy", 4);
+          await request(uaSocket, "terminalStream", { method: "data", data: "./code tunnel --install-extension codesphere-0.0.10.vsix\r"}, "workspace-proxy", 4);
         });
         
         tunnelIsReady(uaSocket).then (async () => {
-          let activeTunnel = JSON.stringify(cache.get(`codesphere.activeTunnelArray`));
+          let activeTunnel = JSON.stringify(cache.get(`codesphere.activeTunnel`));
           console.log('activeTunnel', activeTunnel);
           let activeTunnnel = JSON.parse(activeTunnel);
           console.log('activeTunnnel', activeTunnnel);
-          activeTunnnel.push(workspaceId);
+          activeTunnnel[workspaceId] = {};
           console.log('activeTunnnel', activeTunnnel);
-          cache.update(`codesphere.activeTunnelArray`, activeTunnnel);
+          cache.update(`codesphere.activeTunnel`, activeTunnnel);
           this._view?.webview.postMessage({ 
             type: "loadingFinished", 
             value: {   
@@ -135,10 +296,49 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           this._view?.webview.postMessage({ 
             type: "is connected", 
             value: {  
-                'activeTunnels': `${cache.get(`codesphere.activeTunnelArray`)}`
+                'activeTunnels': `${cache.get(`codesphere.activeTunnel`)}`
             }
           });
           vscode.window.showInformationMessage('Server is up');
+          request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 5);
+
+          // create a backgroundprocess to keep the tunnel alive without having a terminal open
+          // using nohup
+
+          const terminalSessionsBgProcess = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
+          console.log(terminalSessionsBgProcess.data.name);
+          const tmuxSessionNameBgProcess = terminalSessionsBgProcess.data.name;
+          
+          await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess }, "workspace-proxy", 7);
+          
+          await request(uaSocket, "terminalStream", { method: "data", data: "nohup ./code tunnel\r" }, "workspace-proxy", 7);
+          await request(uaSocket, "terminalStream", { method: "data", data: "^Z\r" }, "workspace-proxy", 7);
+          await request(uaSocket, "terminalStream", { method: "data", data: "bg\r" }, "workspace-proxy", 7);
+          await request(uaSocket, "terminalStream", { method: "data", data: "disown\r" }, "workspace-proxy", 7);
+
+          const pidTerminal = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
+          const pidTerminalName = pidTerminal.data.name;
+
+          await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: pidTerminalName }, "workspace-proxy", 8);
+
+          await request(uaSocket, "terminalStream", { method: "data", data: "ps aux\r" }, "workspace-proxy", 8);
+
+          getPidFromServer(uaSocket).then(async (pid: string) => {
+            console.log('pid', pid);
+            cache.update(`codesphere.pid${workspaceId}`, pid);
+
+            let activeTunnel = JSON.stringify(cache.get(`codesphere.activeTunnel`));
+            console.log('activeTunnel', activeTunnel);
+            let activeTunnnel = JSON.parse(activeTunnel);
+            console.log('activeTunnnel', activeTunnnel);
+            activeTunnnel[workspaceId]['pid'] = `${pid}`;
+            console.log('activeTunnnel', activeTunnnel);
+            cache.update(`codesphere.activeTunnel`, activeTunnnel);
+
+            await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: pidTerminalName}, "workspace-proxy", 11);
+            await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionNameBgProcess}, "workspace-proxy", 12);
+          });
+
         });
 
           break;
@@ -147,7 +347,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           if (!data.value) {
             return;
           }
-          let activeTunnels = cache.get("codesphere.activeTunnelArray");
+          console.log('activeTunnels wir sind hier');
+          let activeTunnels = cache.get("codesphere.activeTunnel");
           this._view?.webview.postMessage({ type: "activeWorkspaces", value: activeTunnels });
           break;
         }
@@ -172,9 +373,61 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           if (!data.value) {
             return;
           }
+          const workspaceId = data.value.workspaceId;
+          console.log('workspaceId', workspaceId);
+          console.log('typeof', typeof workspaceId);
+          const workspaceName = data.value.workspaceName;
+          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
+          const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
+          socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
+
+          let uaSocketconnect = getUaSocket();
+
+          await request(uaSocketconnect, "terminalSessionsStream", { workspaceId: workspaceId }, "terminalSessionsStream", 10);
+
+          // Warte auf die Antwort des vorherigen Requests und extrahiere den tmuxSessionName
+          const terminalSessionsResponse = await request(uaSocketconnect, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 14);
+          console.log(terminalSessionsResponse.data.name);
+          const tmuxSessionName = terminalSessionsResponse.data.name;
+
+          await request(uaSocketconnect, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 15);
+          console.log('we are here!');
+          // wenn nein, dann mach weiter und installiere den VSCode Server
+          const bashFilePath  = vscode.Uri.joinPath(this._extensionUri, "src", "sh", "installVSCodeServer.sh");
+          const bashScript = await readBashFile(bashFilePath.fsPath);
+          await request(uaSocketconnect, "terminalStream", { method: "data", data: bashScript }, "workspace-proxy", 15);
+
+          let tunnelExists = await doesTunnelAlreadyExist(uaSocketconnect);
+
+          
+          if (tunnelExists === 'not found') {
+            console.log('not found');
+
+            let activeTunnel: any = cache.get(`codesphere.activeTunnel`);
+
+            delete activeTunnel[workspaceId];
+            cache.update(`codesphere.activeTunnel`, activeTunnel);
+            this._view?.webview.postMessage({
+              type: "removeWorkspace",
+              value: {
+                'workspaceId': `${workspaceId}`
+              }
+            });
+            request(uaSocketconnect, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 5);
+            break;
+            
+          } 
+          // todo: get a new process runninng when no process is running
+          if (tunnelExists === 'found' || tunnelExists === 'found-nopid') {
+            vscode.window.showInformationMessage('Server is up found');
+            request(uaSocketconnect, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 5);
+          }
+          
+
           vscode.commands.executeCommand('remote-tunnels.connectCurrentWindowToTunnel');
           break;
-        }
+          }
+        
         case "onError": {
           if (!data.value) {
             return;
@@ -204,8 +457,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             const storedSessionId: string | undefined = await this.extensionContext.secrets.get("codesphere.sessionId");
         
             // Die genAccessToken-Funktion aufrufen, wenn sessionId verfügbar ist
-            
-            // Die genAccessToken-Funktion aufrufen, wenn sessionId verfügbar ist
+          
             
             genAccessToken(storedSessionId as string, async (error: Error | null, accessToken?: string) => {
               if (error) {
@@ -353,16 +605,19 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         
       });
     }
-      public updateWebviewContent() {
-        if (this._view) {
-          this._view.webview.html = this._getHtmlForWebview(this._view.webview);
-        }
-      }
+
+
+    public updateWebviewContent() {
+      if (this._view) {
+        this._view.webview.html = this._getHtmlForWebview(this._view.webview);
+    }
+  }
 
       
 
-    public revive(panel: vscode.WebviewView) {
+    public revive(panel: vscode.WebviewView, cache: vscode.ExtensionContext) {
       this._view = panel;
+      console.log('revive function');
     }
 
   private _getHtmlForWebview(webview: vscode.Webview) {
