@@ -17,6 +17,15 @@
         });
     }
 
+    function handleGithub() {
+        vscode.postMessage({
+            type: 'github',
+            value: {
+                provider: github,
+                }
+        });
+    }
+
     onMount(() => {
         window.addEventListener('message', (event): void => {
             const message = event.data; // The JSON data our extension sent
@@ -162,7 +171,7 @@
 
 <div class="oauth">
     <div class="oauth-button github-oauth-button">
-        <button class="github-button">
+        <button class="github-button" on:click={handleGithub}>
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <!-- GitHub SVG Icon -->
                 <rect height="24" width="24" fill="none" x="0"></rect>

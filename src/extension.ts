@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 import { SidebarProvider } from './SidebarProvider';
 import { reloadCache } from './ts/reloadCache';
+import { signInToGitHub } from './ts/oAuth';
 const axios = require('axios');
-
-
+const { setupWs, 
+    request } = require('./ts/wsService')
+import * as wsLib from 'ws';
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "codesphere" is now active!');
@@ -77,6 +79,34 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	  );
 
+	  context.subscriptions.push(
+		vscode.commands.registerCommand('codesphere.signInToGitHub', async () => {
+        await signInToGitHub(async (error, sessionId) => {
+			vscode.window.showInformationMessage("Session id:" + sessionId);
+		})
+		}));
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand('codesphere.getSessionid', async () => {
+
+				const code = await vscode.window.showInputBox({
+					prompt: 'Enter your code:',
+					placeHolder: '1234'
+				});
+		
+				if (code) {
+					let socket: any;
+					const socketURL = `wss://codesphere.com/auth-service`;
+					socket = await setupWs(new wsLib.WebSocket(socketURL), "auth-service");
+					const sessionId = await request(socket, "authorizeWithOAuth", { code: code }, "authorizeWithOAuth", 6);
+					console.log(sessionId)
+					vscode.window.showInformationMessage("Session id: " + sessionId);
+				} else {
+					vscode.window.showWarningMessage('No input provided.');
+				}
+				
+
+			}));
 	  
 };
 

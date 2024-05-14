@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { getNonce } from "./ts/getNonce";
 import { signIn, genAccessToken } from "./ts/authentication";
+import { signInToGitHub } from "./ts/oAuth";
 import { listTeams, listWorkspaces, getUserData } from "./ts/userDataRequests";
 const { setupWs, 
         request, 
@@ -269,7 +270,92 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
           break;
         }
+        case "github": {
+          if (!data.value) {
+            return;
+          }
+          
         
+          signInToGitHub(async (error, sessionId) => {
+            if (error) {
+              console.log('error2', error);
+              vscode.window.showErrorMessage('An error occurred while signing in: ' + error.message);
+              this._view?.webview.postMessage({ type: "onError", value: error.message });
+              return;
+            }
+        
+            vscode.window.showInformationMessage(`Successfully signed in`);
+            
+            this.extensionContext.secrets.store("codesphere.sessionId", sessionId as string);
+            // sessionId in der Variable speichern
+            const storedSessionId: string | undefined = await this.extensionContext.secrets.get("codesphere.sessionId");
+            
+            // Die genAccessToken-Funktion aufrufen, wenn sessionId verfügbar ist
+            
+            genAccessToken(storedSessionId as string, async (error: Error | null, accessToken?: string) => {
+              if (error) {
+                  vscode.window.showErrorMessage('An error occurred while generating access token: ' + error.message);
+                  return;
+              }
+
+              if (!accessToken) {
+                  vscode.window.showErrorMessage('Access token is undefined.');
+                  return;
+              }
+
+              this.extensionContext.secrets.store("codesphere.accessToken", accessToken);
+              cache.update("codesphere.accessTokenCache", accessToken);
+
+              vscode.window.showInformationMessage('Successfully generated access token');
+              // After successful sign in, update the webview content
+              webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
+              // After the user has successfully logged in
+              vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
+              cache.update("codesphere.isLoggedIn", true);
+            });
+          });
+
+
+          const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken");
+
+          
+          try {
+            const teams = await listTeams(accessToken as string);
+            vscode.window.showInformationMessage(`Successfully listed teams: ${JSON.stringify(teams)}`);
+            cache.update("codesphere.teams", teams);
+        
+            let teamArray = cache.get("codesphere.teams");
+            this._view?.webview.postMessage({ type: "listTeams", value: `${JSON.stringify(teamArray)}` });
+        } catch (error) {
+            console.log('error', error);
+        }
+
+        try {
+          const teams: Array<any> = cache.get("codesphere.teams") as Array<any>;
+          const workspaces = await listWorkspaces(accessToken as string, teams);
+          cache.update("codesphere.workspaces", workspaces);
+          
+          const message = cache.get("codesphere.workspaces");
+          vscode.window.showInformationMessage(`Successfully listed workspaces: ${message}`);
+        } catch (error) {
+          console.log('error', error);
+        }
+      
+      try {
+          const userData = await getUserData(accessToken as string);
+          vscode.window.showInformationMessage(`Successfully listed user: ${JSON.stringify(userData)}`);
+          cache.update("codesphere.userData", userData);
+      
+          let user = cache.get("codesphere.userData");
+          this._view?.webview.postMessage({ type: "getUserData", value: `${JSON.stringify(user)}` });
+      } catch (error) {
+          console.log(error);
+      }
+
+
+          break;
+        }
+
         case "listTeams": {
           if (!data.value) {
             return;
