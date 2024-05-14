@@ -22,10 +22,14 @@ import axios from 'axios';
 
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
+  
+
   _view?: vscode.WebviewView;
   _doc?: vscode.TextDocument;
 
   constructor(private readonly _extensionUri: vscode.Uri, public extensionContext: vscode.ExtensionContext) {}
+
+  
 
   public resolveWebviewView(webviewView: vscode.WebviewView) {
     this._view = webviewView;
@@ -37,6 +41,11 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
       localResourceRoots: [this._extensionUri],
     };
+
+    vscode.commands.getCommands().then((commands) => {
+      console.log(commands);
+    }
+    );
 
     if (!cache.get("codesphere.isLoggedIn") || cache.get("codesphere.isLoggedIn") === false) {
       vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', false);
@@ -167,31 +176,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             console.log('not found');
             
           } 
-          if (tunnelExists === 'found') {
-            let activeTunnel = JSON.stringify(cache.get(`codesphere.activeTunnel`));
-            console.log('activeTunnel', activeTunnel);
-            let activeTunnnel: Array<any> = JSON.parse(activeTunnel);
-            console.log('activeTunnnel', activeTunnnel);
-            activeTunnnel[workspaceId] = {};
-            console.log('activeTunnnel', activeTunnnel);
-            cache.update(`codesphere.activeTunnel`, activeTunnnel);
-            this._view?.webview.postMessage({ 
-              type: "loadingFinished", 
-              value: {   
-                  'workspaceId': `${workspaceId}`
-              }
-            });
-
-            this._view?.webview.postMessage({ 
-              type: "is connected", 
-              value: {  
-                  'activeTunnels': `${cache.get(`codesphere.activeTunnel`)}`
-              }
-            });
-            vscode.window.showInformationMessage('Server is up');
-            request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 5);
-            break;
-          }
+          
           if (tunnelExists === 'found-nopid') {
             const terminalSessionsBgProcess = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
             console.log(terminalSessionsBgProcess.data.name);
@@ -237,6 +222,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     'activeTunnels': `${cache.get(`codesphere.activeTunnel`)}`
                 }
               });
+
+              this._view?.webview.postMessage({ type: "activeWorkspaces", value: `${cache.get('codesphere.activeTunnel')}` });
               
             });
           }
@@ -244,10 +231,11 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           await request(uaSocket, "terminalStream", { method: "data", data: "[B\r" }, "workspace-proxy", 4);
           console.log('there');
           const code = await codePromise;
+          console.log('Das ist der code' + code);
 
           console.log('bashScript', cache.get(`codesphere.lastCode${workspaceId}`));
 
-          console.log('code', code);
+          console.log('codeeeeesfsf', code);
 
           this._view?.webview.postMessage({ 
             type: "gitHubAuth", 
@@ -299,6 +287,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                 'activeTunnels': `${cache.get(`codesphere.activeTunnel`)}`
             }
           });
+
+          this._view?.webview.postMessage({ type: "activeWorkspaces", value: `${cache.get(`codesphere.activeTunnel`)}` });
+          
           vscode.window.showInformationMessage('Server is up');
           request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 5);
 
@@ -353,11 +344,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
         }
     
-        case "onInfo": {
+        case "getConnectedWorkspace": {
           if (!data.value) {
             return;
           }
-          vscode.window.showInformationMessage(data.value);
+          let currentWorkspace: any = cache.get('codesphere.currentWorkspace');
+          this._view?.webview.postMessage({ type: "connectedWorkspace", value: currentWorkspace });
           break;
         }
 
@@ -420,7 +412,21 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           // todo: get a new process runninng when no process is running
           if (tunnelExists === 'found' || tunnelExists === 'found-nopid') {
             vscode.window.showInformationMessage('Server is up found');
-            request(uaSocketconnect, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 5);
+            
+          request(uaSocketconnect, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 14);
+
+          const terminalSessionsResponse2 = await request(uaSocketconnect, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 17);
+          console.log(terminalSessionsResponse2.data.name);
+          const tmuxSessionName2 = terminalSessionsResponse2.data.name;
+
+          await request(uaSocketconnect, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName2 }, "workspace-proxy", 30);
+          
+          await request(uaSocketconnect, "terminalStream", { method: "data", data: "nohup ./code tunnel \r" }, "workspace-proxy", 30);
+          await request(uaSocketconnect, "terminalStream", { method: "data", data: "\r" }, "workspace-proxy", 30);
+          await request(uaSocketconnect, "terminalStream", { method: "data", data: "bg\r" }, "workspace-proxy", 30);
+          await request(uaSocketconnect, "terminalStream", { method: "data", data: "disown\r" }, "workspace-proxy", 30);
+
+          // await request(uaSocketconnect, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName2}, "workspace-proxy", 17);
           }
           
 
@@ -601,24 +607,90 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           vscode.window.showInformationMessage(data.value);
           break;  
         }
+
+        case "openOverview": {
+          if (!data.value) {
+            return;
+          }
+
+          webviewView.webview.html = this._getHtmlWebviewOverview(webviewView.webview);
+        
+          const workspacesInTeam: any = cache.get("codesphere.workspaces");
+          console.log('workspacesInTeam is that:', workspacesInTeam);
+          const teamId = data.value.teamId; // Assuming data.value has a teamId property
+          console.log('teamId is this:', teamId);
+        
+          // Find the workspace object where workspaceId matches data.value.workspaceId
+          let selectedWorkspace = workspacesInTeam[teamId].find(
+            (workspace: any) => workspace.id === data.value.workspaceId
+          );
+          
+          cache.update("codesphere.currentconnectedWorkspace", selectedWorkspace);
+          
+        
+          // Check if the workspace exists before using it
+          if (selectedWorkspace) {
+            console.log('selectedWorkspace', selectedWorkspace);
+            
+            this._view?.webview.postMessage({
+              type: "overviewData",
+              value: {
+                workspace: selectedWorkspace,
+              },
+            });
+          } else {
+            // Handle the case where the workspace is not found (optional)
+            console.error("Workspace not found with ID:", data.value.workspaceId);
+          }
+        
+          break;
+        }
+
+        case "getWorkspaceData": {
+
+          const workspace: any = cache.get("codesphere.currentconnectedWorkspace");          
+        
+          // Check if the workspace exists before using it
+          if (workspace) {
+            console.log('selectedWorkspace', workspace);
+            
+            this._view?.webview.postMessage({
+              type: "overviewData",
+              value: {
+                workspace: workspace,
+              },
+            });
+          } else {
+            // Handle the case where the workspace is not found (optional)
+            console.error("Workspace not found with ID:", data.value.workspaceId);
+          }
+          break;
         }
         
-      });
+        case "openSidebar": {
+          if (!data.value) {
+            return;
+          }
+          webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
+          break;
+        }
+      }
     }
-
-
-    public updateWebviewContent() {
+    );
+  }
+      
+    
+  public updateWebviewContent() {
       if (this._view) {
         this._view.webview.html = this._getHtmlForWebview(this._view.webview);
+      }
     }
-  }
-
       
 
-    public revive(panel: vscode.WebviewView, cache: vscode.ExtensionContext) {
-      this._view = panel;
-      console.log('revive function');
-    }
+  public revive(panel: vscode.WebviewView) {
+    this._view = panel;
+    console.log('revive function');
+  }
 
   private _getHtmlForWebview(webview: vscode.Webview) {
     const styleResetUri = webview.asWebviewUri(
@@ -705,4 +777,53 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 			</body>
 			</html>`;
   }
+
+  private _getHtmlWebviewOverview(webview: vscode.Webview) {
+    const styleResetUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "media", "reset.css")
+    );
+    const scriptUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "out", "compiled/overview.js")
+    );
+    const styleMainUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "out", "compiled/overview.css")
+    );
+    const styleVSCodeUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "media", "vscode.css")
+    );
+  
+    // Use a nonce to only allow a specific script to be run.
+    const nonce = getNonce();
+  
+    return `<!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <!--
+          Use a content security policy to only allow loading images from https or from our extension directory,
+          and only allow scripts that have a specific nonce.
+        -->
+        <meta http-equiv="Content-Security-Policy" content="img-src https: data:; style-src 'unsafe-inline' ${
+      webview.cspSource
+    }; script-src 'unsafe-inline' ${
+      webview.cspSource
+    };">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="${styleResetUri}" rel="stylesheet">
+        <link href="${styleVSCodeUri}" rel="stylesheet">
+        <link href="${styleMainUri}" rel="stylesheet">
+        <script nonce="${nonce}">
+          const vscode = acquireVsCodeApi();
+        </script>
+      </head>
+      <body>
+        <script nonce="${nonce}" src="${scriptUri}"></script>
+      </body>
+      </html>`;
+  }
+
+
 }
+
+
+
