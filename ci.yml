@@ -1,0 +1,14 @@
+prepare:
+  steps:
+    - name: Install Dependencies
+      command: npm install
+    - name: Install Dependencies
+      command: cd server && npm install      
+    - name: Package extension
+      command: vsce pack --allow-missing-repository     
+test:
+  steps: []
+run:
+  steps:
+    - name: Start Dev Server
+      command: cd server && npm start
