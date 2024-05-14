@@ -27,33 +27,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 		console.log(`stdout: ${stdout}`);
 		workspaceId = stdout ? stdout.trim() : ``;
+		context.globalState.update("codesphere.currentWorkspace", workspaceId);
 
 
 		if (workspaceId !== "") {
-			const pwdbash = `echo $PWD`;
-			let pwd;
-
-			exec (pwdbash, (error, stdout, stderr) => {	
-				if (error) {
-					console.error(`exec error: ${error}`);
-					return;
-				}
-		
-				if (stderr) {
-					console.error(`stderr: ${stderr}`);
-					return;
-				}
-
-				pwd = stdout ? stdout.trim() : '';
-
-				if (pwd !== '' && context.globalState.get("codesphere.currentWorkspace") !== workspaceId) {
-					const pwdUri = vscode.Uri.parse(pwd);
-					vscode.commands.executeCommand('vscode.openFolder', pwdUri);
-					context.globalState.update("codesphere.currentWorkspace", workspaceId);
-				} else {
-					console.error('PWD ist leer.');
-				}
-			});
+			const pwdUri = vscode.Uri.parse('home/user/app');
+			vscode.commands.executeCommand('vscode.openFolder', pwdUri);
 		}
 	});
 

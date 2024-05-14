@@ -322,6 +322,31 @@ const getPidFromServer = async (deploymentSocket: any) => {
     });
 };
 
+const waitForTerminal = async (deploymentSocket: any) => {
+    return new Promise<void>((resolve, reject) => {
+        const messageHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                if (msgTest.includes("Welcome to Codesphere!")) {
+                    deploymentSocket.off("message", messageHandler);
+                    resolve();
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+}
+
                 
 module.exports = {
     setupWs,
@@ -335,6 +360,7 @@ module.exports = {
     uaSocket,
     doesTunnelAlreadyExist,
     getPidFromServer,
+    waitForTerminal,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
 };

@@ -12,6 +12,7 @@ const { setupWs,
         wakeUpWorkspace,
         doesTunnelAlreadyExist,
         getPidFromServer,
+        waitForTerminal,
         serverIsUp } = require('./ts/wsService');
 import { readBashFile } from "./ts/readBash";
 import * as wsLib from 'ws';
@@ -61,8 +62,49 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
       console.log('Congratulations, your extension "codesphere" is now active! You are logged in.');
     }
-      
 
+    if (cache.get("codesphere.isLoggedIn") === true && cache.get('codesphere.currentWorkspace') !== '') {
+      vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
+      cache.update("codesphere.isLoggedIn", true);
+      webviewView.webview.html = this._getHtmlWebviewOverview(webviewView.webview);
+      console.log('Congratulations, your extension "codesphere" is now active! You are logged in222.');
+
+      let currentWorkspace = parseInt(cache.get('codesphere.currentWorkspace') as string);
+      const workspacesInTeam: any = cache.get("codesphere.workspaces");
+      
+      console.log('currentWorkspace', currentWorkspace);
+      let matchingObject = null;
+      for (const teamId in workspacesInTeam) {
+        const workspaces = workspacesInTeam[teamId]; // Hole die Liste der Arbeitsbereiche für das Team
+        console.log('workspacessss', workspaces);
+        for (const workspace of workspaces) {
+          console.log('workspace.id', workspace.id);
+          if (parseInt(workspace.id) === currentWorkspace) {
+            matchingObject = workspace;
+            break; // Verlasse die Schleife, sobald ein Treffer gefunden wurde
+          }
+        }
+        if (matchingObject) {
+          break; // Verlasse die äußere Schleife, sobald ein Treffer gefunden wurde
+        }
+      }
+      console.log('matchingObject', matchingObject);
+
+      cache.update("codesphere.currentconnectedWorkspace", matchingObject);
+          
+        
+          // Check if the workspace exists before using it
+          if (matchingObject) {
+            console.log('selectedWorkspace', matchingObject);
+            
+            this._view?.webview.postMessage({
+              type: "overviewData",
+              value: {
+                workspace: matchingObject,
+              },
+            });
+          } 
+        }
     
 
     if (!cache.get("codesphere.isLoggedIn")) {
@@ -143,6 +185,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const workspaceName = data.value.workspaceName;
           const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
+          const teamId = data.value.teamId;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
           
 
@@ -222,8 +265,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     'activeTunnels': `${cache.get(`codesphere.activeTunnel`)}`
                 }
               });
-
-              this._view?.webview.postMessage({ type: "activeWorkspaces", value: `${cache.get('codesphere.activeTunnel')}` });
+              activeTunnel = cache.get(`codesphere.activeTunnel`);
+              this._view?.webview.postMessage({ type: "activeWorkspaces", value: activeTunnel });
               
             });
           }
@@ -288,7 +331,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             }
           });
 
-          this._view?.webview.postMessage({ type: "activeWorkspaces", value: `${cache.get(`codesphere.activeTunnel`)}` });
+          let activeTunnel2 = cache.get(`codesphere.activeTunnel`);
+          this._view?.webview.postMessage({ type: "activeWorkspaces", value: activeTunnel2 });
           
           vscode.window.showInformationMessage('Server is up');
           request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 5);
@@ -415,22 +459,32 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             
           request(uaSocketconnect, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 14);
 
-          const terminalSessionsResponse2 = await request(uaSocketconnect, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 17);
-          console.log(terminalSessionsResponse2.data.name);
-          const tmuxSessionName2 = terminalSessionsResponse2.data.name;
-
-          await request(uaSocketconnect, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName2 }, "workspace-proxy", 30);
+          const terminalSessionsBgProcess2 = await request(uaSocketconnect, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
+          console.log(terminalSessionsBgProcess2.data.name);
+          const tmuxSessionNameBgProcess2 = terminalSessionsBgProcess2.data.name;
           
-          await request(uaSocketconnect, "terminalStream", { method: "data", data: "nohup ./code tunnel \r" }, "workspace-proxy", 30);
-          await request(uaSocketconnect, "terminalStream", { method: "data", data: "\r" }, "workspace-proxy", 30);
-          await request(uaSocketconnect, "terminalStream", { method: "data", data: "bg\r" }, "workspace-proxy", 30);
-          await request(uaSocketconnect, "terminalStream", { method: "data", data: "disown\r" }, "workspace-proxy", 30);
+          await request(uaSocketconnect, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess2 }, "workspace-proxy", 7);
+          
+          // wait 500 ms
+          await new Promise(resolve => setTimeout(resolve, 500));
 
-          // await request(uaSocketconnect, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName2}, "workspace-proxy", 17);
+          request(uaSocketconnect, "terminalStream", { method: "data", data: "nohup ./code tunnel" }, "workspace-proxy", 7);
+          // wait 500 ms
+          await new Promise(resolve => setTimeout(resolve, 500));
+          request(uaSocketconnect, "terminalStream", { method: "data", data: "\r" }, "workspace-proxy", 7);
+          request(uaSocketconnect, "terminalStream", { method: "data", data: "\r" }, "workspace-proxy", 7);
+          request(uaSocketconnect, "terminalStream", { method: "data", data: "bg\r" }, "workspace-proxy", 7);
+          request(uaSocketconnect, "terminalStream", { method: "data", data: "disown\r" }, "workspace-proxy", 7);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await request(uaSocketconnect, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionNameBgProcess2}, "workspace-proxy", 17);
+
+          
           }
           
 
           vscode.commands.executeCommand('remote-tunnels.connectCurrentWindowToTunnel');
+
+          
           break;
           }
         

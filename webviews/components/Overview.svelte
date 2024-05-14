@@ -26,7 +26,7 @@
     }
 
     // funtion to set up the vscode server on Codesphere if it is not already running
-    function openSocket(workspaceId, workspaceName, teamDatacenterId) {
+    function openSocket(workspaceId, workspaceName, teamDatacenterId, teamId) {
         loadingMessage = "Waiting for authorization..."
         creatingTunnel = true;
         console.log(`creatingTunnel: ${creatingTunnel}`);
@@ -36,19 +36,21 @@
             value: {
                 workspaceId: workspaceId,
                 workspaceName: workspaceName,
-                datacenterId: teamDatacenterId
+                datacenterId: teamDatacenterId,
+                teamId: teamId
             }
         });
     }
 
     // function to trigger the connection to the remote server
-    function openTunnel(workspaceId, workspaceName, teamDatacenterId) {
+    function openTunnel(workspaceId, workspaceName, teamDatacenterId, teamId) {
         vscode.postMessage({
             type: 'openTunnel',
             value: {
                 workspaceId: workspaceId,
                 workspaceName: workspaceName,
-                datacenterId: teamDatacenterId
+                datacenterId: teamDatacenterId,
+                teamId: teamId
             }
         });
     }
@@ -159,12 +161,12 @@
                     }
                     break;
                 case 'activeWorkspaces':
-                    console.log(`${message.value} type user: ${typeof message.value}`);
-                    activeWorkspaces = message.value;
+                    console.log(`${message.value} typesesefdss user: ${typeof message.value}`);
                     console.log(`activeWorkspaces3333: ${overviewData.workspace.id}`)
-                    console.log(`activeWorkspaces2222: ${activeWorkspaces[overviewData.workspace.id]}`);
-                    if (activeWorkspaces[overviewData.workspace.id]) {
-                        console.log(`activeWorkspaces[overviewData.workspace.id]: ${activeWorkspaces[overviewData.workspace.id]}`);
+                    console.log(`activeWorkspaces2222: ${message.value[overviewData.workspace.id]}`);
+                    
+                    if (message.value[overviewData.workspace.id]) {
+                        console.log(`hallihallo: ${message.value[overviewData.workspace.id]}`);
                         activeWorkspace = true;
                     }
                     break;
@@ -366,7 +368,7 @@
         {/if}
     {/if}
     {#if !creatingTunnel && !activeWorkspace && workspaceDeployed === true}
-        <button class="connect" on:click={() => openSocket(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId)}>create tunnel</button>
+        <button class="connect" on:click={() => openSocket(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId, overviewData.workspace.teamId)}>create tunnel</button>
     {/if} 
 
     {#if creatingTunnel === true}
@@ -409,7 +411,7 @@
         <div class="codeProvider">
             <div class="codeProviderInside">
                 <p class="spaceForLink">Workspace is connected</p>
-                <button on:click= {() => openTunnel(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId)}> open connection
+                <button on:click= {() => openTunnel(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId, overviewData.workspace.teamId)}> open connection
                 </button>
             </div>
         </div>
