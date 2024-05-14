@@ -1,9 +1,9 @@
 prepare:
   steps:
     - name: Install Dependencies
-      command: npm install
+      command: cd server && npm install
     - name: Install Dependencies
-      command: cd server && npm install      
+      command: npm install @vscode/vsce              
     - name: Package extension
       command: vsce pack --allow-missing-repository     
 test:
