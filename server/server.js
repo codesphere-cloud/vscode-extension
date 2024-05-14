@@ -6,7 +6,7 @@ const extension_package = require('../package.json')
 const version = extension_package.version
 // Definiere den Pfad zur VSIX-Datei
 const vsixFile = 'codesphere-'+version+'.vsix';
-const vsixFilePath = path.resolve(__dirname, vsixFile);
+const vsixFilePath = path.resolve('/home/user/app', vsixFile);
 
 // Stelle den Download-Endpunkt bereit
 app.get('/download', (req, res) => {
