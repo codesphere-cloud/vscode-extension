@@ -20,11 +20,7 @@
     onMount(() => {
         window.addEventListener('message', (event): void => {
             const message = event.data; // The JSON data our extension sent
-            switch (message.type) {
-                case 'onError':
-                    errorMessage = message.value;
-                    break;
-            }
+            // if needed you can here message listeners with switch case
         });
     });
 
