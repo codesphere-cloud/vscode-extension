@@ -18,10 +18,13 @@
     }
 
     onMount(() => {
-        window.addEventListener('message', (event): void => {
+        console.log('live')
+        window.addEventListener('message', event => {
             const message = event.data; // The JSON data our extension sent
+            console.log(`message received: ${JSON.stringify(message)}`);
             switch (message.type) {
                 case 'onError':
+                    console.log(`hallo`)
                     errorMessage = message.value;
                     break;
             }

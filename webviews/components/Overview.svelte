@@ -14,6 +14,12 @@
     let connectedWorkspace = false;
     let activeWorkspaces;
     let workspaceURL;
+    let prepareStageSate = false; // Zustand für die Animation
+    let prepareStageSuccess = ''; // Zustand ob stage erfolgreich war oder einen Fehler hatte
+    let testStageSate = false; // Zustand für die Animation
+    let testStageSuccess = '';
+    let runStageSate = false; // Zustand für die Animation
+    let runStageSuccess = '';
 
     // function to wakr up on-demand workspaces on Codesphere
     function activateWorkspace (workspaceId, teamDatacenterId){
@@ -123,6 +129,38 @@
         });
     }
 
+    function startCiStage(workspaceId, stage, dataCenterId) {
+        vscode.postMessage({
+            type: 'startCiStage',
+            value: {
+                workspaceId: workspaceId,
+                stage: stage,
+                dcId: dataCenterId
+            }
+        });
+    }
+
+    function startTestStage(workspaceId, dataCenterId) {
+        testStageSate = true;
+        testStageSuccess = '';
+        let stage = "test";
+        startCiStage(workspaceId, stage, dataCenterId);
+    }
+
+    function startPrepareStage(workspaceId, dataCenterId) {
+        prepareStageSate = true;
+        prepareStageSuccess = '';
+        let stage = "prepare";
+        startCiStage(workspaceId, stage, dataCenterId);
+    }
+
+    function startRunStage(workspaceId, dataCenterId) {
+        runStageSate = true;
+        runStageSuccess = '';
+        let stage = "run";
+        startCiStage(workspaceId, stage, dataCenterId);
+    }
+
     onMount(() => {
         
         window.addEventListener('message', event => {
@@ -180,6 +218,18 @@
                         value: {
                         }
                     });
+                    break;
+                case 'ciPipelineFinished':
+                    if (message.value.stage === 'prepare') {
+                        prepareStageSate = false;
+                        prepareStageSuccess = message.value.result;
+                    } else if (message.value.stage === 'test') {
+                        testStageSate = false;
+                        testStageSuccess = message.value.result;
+                    } else if (message.value.stage === 'run') {
+                        runStageSate = false;
+                        runStageSuccess = message.value.result;
+                    }
                     break;
             }   
         });
@@ -273,7 +323,7 @@
     }
 
     button.connect {
-        border: none;
+        border: '';
         padding: 5px;
         width: 100px;
         text-align: center;
@@ -341,9 +391,34 @@
         padding: 5px;
         background-color: #00BCFF;
         color: white;
-        text-decoration: none;
+        text-decoration: '';
         border-radius: 5px;
         cursor: pointer;
+    }
+
+    .ci-pipelineBox {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .pipelineStageTitle {
+        font-size: 15px;
+        font-weight: bold;
+    }
+
+    .pipelineStage {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid #00BCFF;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        cursor: pointer;
+    
     }
 </style>
 
@@ -351,14 +426,66 @@
     <div class="back-button" on:click={() => backToSidebar()} role=presentation>
         ◀ Back
     </div>
-    <a href='{workspaceURL}' class="openDeploymentButton">Open deployment</a>
-
     {#if workspaceDeployed === true}
         <div class="workspace-title">
             {overviewData.workspace.name}
         </div>
         
     {/if}
+    <a href='{workspaceURL}' class="openDeploymentButton">Open deployment</a>
+
+    <!--ci-pipeline-->
+
+    <div class="ci-pipelineBox">
+        <div class="pipelineStage" on:click={() => startPrepareStage(overviewData.workspace.id, overviewData.workspace.dataCenterId)} role="presentation" style="background-color: {prepareStageSuccess === 'success' ? 'green' : (prepareStageSuccess === 'failure' ? 'red' : 'inherit')}">
+            <div class="pipelineStageTitle">Prepare</div>
+            {#if prepareStageSate}
+                <div class="animation-container">
+                    <div class="circle-container">
+                        <div class="inner-circle" class:animate={animateCircles}></div>
+                        <div class="outer-circle" class:animate={animateCircles}></div>
+                    </div>
+                </div>
+                {#if animateCircles} 
+                    <script>
+                        startAnimation(); 
+                    </script>
+                {/if}
+            {/if}
+        </div>
+        <div class="pipelineStage" on:click={() => startTestStage(overviewData.workspace.id, overviewData.workspace.dataCenterId)} role="presentation" style="background-color: {testStageSuccess === 'success' ? 'green' : (testStageSuccess === 'failure' ? 'red' : 'inherit')}">
+            <div class="pipelineStageTitle">Test</div>
+            {#if testStageSate}
+                <div class="animation-container">
+                    <div class="circle-container">
+                        <div class="inner-circle" class:animate={animateCircles}></div>
+                        <div class="outer-circle" class:animate={animateCircles}></div>
+                    </div>
+                </div>
+                {#if animateCircles} 
+                    <script>
+                        startAnimation(); 
+                    </script>
+                {/if}
+            {/if}
+        </div>
+        <div class="pipelineStage" on:click={() => startRunStage(overviewData.workspace.id, overviewData.workspace.dataCenterId)} role="presentation" style="background-color: {runStageSuccess === 'success' ? 'green' : (runStageSuccess === 'failure' ? 'red' : 'inherit')}">
+            <div class="pipelineStageTitle">Run</div>
+                {#if runStageSate}
+                    <div class="animation-container">
+                        <div class="circle-container">
+                            <div class="inner-circle" class:animate={animateCircles}></div>
+                            <div class="outer-circle" class:animate={animateCircles}></div>
+                        </div>
+                    </div>
+                    {#if animateCircles} 
+                        <script>
+                            startAnimation(); 
+                        </script>
+                    {/if}
+                {/if}
+        </div>
+    </div>
 
     {#if workspaceDeployed === false}
         <div class="animation-container">
@@ -406,7 +533,7 @@
                 <div class="codeAndIcon">
                     <p class="codeBox" id="codeBox">{code}</p>
                     <div class="icon" on:click={() => copyCode()} role="presentation">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="''" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
                         </svg>
                     </div>
