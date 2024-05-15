@@ -155,6 +155,7 @@
                     break;
                 case 'connectedWorkspace':
                     if (message.value === overviewData.workspace.id) {
+                        console.log(`is it connected? ${message.value === overviewData.workspace.id}`)
                         connectedWorkspace = true;
                         vscode.postMessage({
                             type: 'getActiveWorkspaces',
@@ -414,8 +415,7 @@
         <div class="codeProvider">
             <div class="codeProviderInside">
                 <p class="spaceForLink">Workspace is connected</p>
-                <button on:click= {() => openTunnel(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId, overviewData.workspace.teamId)}> open connection
-                </button>
+                <button on:click= {() => openTunnel(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId, overviewData.workspace.teamId)}> open connection</button>
             </div>
         </div>
     {/if}
