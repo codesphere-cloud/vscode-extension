@@ -13,6 +13,7 @@ const { setupWs,
         doesTunnelAlreadyExist,
         getPidFromServer,
         waitForTerminal,
+        waitForCiPipeline,
         serverIsUp } = require('./ts/wsService');
 import { readBashFile } from "./ts/readBash";
 import * as wsLib from 'ws';
@@ -334,6 +335,14 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           this._view?.webview.postMessage({ type: "activeWorkspaces", value: activeTunnels });
           break;
         }
+
+        case "on Error": {
+          if (!data.value) {
+            return;
+          }
+          vscode.window.showErrorMessage(data.value);
+          break;
+        }
     
         case "getConnectedWorkspace": {
           if (!data.value) {
@@ -392,9 +401,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             
           } 
 
-          if (tunnelExists === 'found' || tunnelExists === 'found-nopid') {
-            vscode.window.showInformationMessage('Server is up found');
-            
+          if (tunnelExists === 'found' || tunnelExists === 'found-nopid') {            
             request(uaSocketconnect, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 14);
 
             const terminalSessionsBgProcess2 = await request(uaSocketconnect, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
@@ -424,6 +431,38 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }
         
         // Verwendung der Funktion signIn
+        case "startCiStage": {
+          if (!data.value) {
+            return;
+          }
+
+          const workspaceId = data.value.workspaceId;
+          const stage = data.value.stage;
+
+          const socketURL = `wss://${data.value.dcId}.codesphere.com/workspace-proxy`;
+          const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
+          socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
+
+          let uaSocket = getUaSocket();
+
+          await request(uaSocket, "executionInfo", { workspaceId: workspaceId, stage: stage }, "workspace-proxy", 31);
+
+          await request(uaSocket, "startPipeline", { workspaceId: workspaceId, stage: stage }, "workspace-proxy", 32);
+
+          waitForCiPipeline(uaSocket).then(async (result: any) => {
+            this._view?.webview.postMessage({ 
+              type: "ciPipelineFinished", 
+              value: {   
+                  workspaceId: workspaceId,
+                  stage: stage,
+                  result: result
+              }
+            });
+          });
+
+          break;
+
+        }
         case "signin": {
           if (!data.value) {
             return;
@@ -432,8 +471,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           signIn(data.value.email, data.value.password, async (error, sessionId) => {
             if (error) {
               console.log('error2', error);
+              this._view?.webview.postMessage({ type: "onError", value: error });
+              this._view?.webview.postMessage({ type: "onError", value: `${error.message}` });
               vscode.window.showErrorMessage('An error occurred while signing in: ' + error.message);
-              this._view?.webview.postMessage({ type: "onError", value: error.message });
+              console.log('error34', error.message);
               return;
             }
         

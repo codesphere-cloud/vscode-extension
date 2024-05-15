@@ -345,7 +345,37 @@ const waitForTerminal = async (deploymentSocket: any) => {
         deploymentSocket.on("message", messageHandler);
         deploymentSocket.on("error", errorHandler);
     });
+};
+
+const waitForCiPipeline = async (deploymentSocket: any) => { 
+    return new Promise((resolve, reject) => {
+        const messageHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                if (msgTest.includes("success")) {
+                    deploymentSocket.off("message", messageHandler);
+                    resolve('success');
+                }
+                if (msgTest.includes("failure")) {
+                    deploymentSocket.off("message", messageHandler);
+                    resolve('failure');
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
 }
+
 
                 
 module.exports = {
@@ -361,6 +391,7 @@ module.exports = {
     doesTunnelAlreadyExist,
     getPidFromServer,
     waitForTerminal,
+    waitForCiPipeline,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
 };
