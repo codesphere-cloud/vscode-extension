@@ -85,48 +85,32 @@
             console.log(`message received: ${JSON.stringify(message)}`);
             switch (message.type) {
                 case 'listTeams':
-                    // define code which will affect the DOM depending on the message
                     teamArray = JSON.parse(message.value);
-                    console.log(`${teamArray} type: ${typeof teamArray}`);
-                    teamArray.forEach(team => {
-                        console.log(`team: ${JSON.stringify(team)}`);
-                    });
                     break;
                 case 'getWorkspaces':
-                    // define code which will affect the DOM depending on the message
-                    console.log(`message.value: ${message.value}`);
                     workspaceArray = JSON.parse(message.value);
-                    console.log(`${workspaceArray} type hahaha: ${typeof workspaceArray}`);
                     
                     break;
                 case 'getUserData':
-                    // define code which will affect the DOM depending on the message
                     user = JSON.parse(message.value);
-                    console.log(`${user} type user: ${typeof user}`);
                     break;
                 case 'activeWorkspaces':
-                    // define code which will affect the DOM depending on the message
-                    console.log(`${message.value} type user: ${typeof message.value}`);
                     activeWorkspaces = message.value;
                     break;
                 case 'gitHubAuth':
-                    // define code which will affect the DOM depending on the message
                     code[message.value.state] = message.value.code; 
                     workspaceToConnect = [...workspaceToConnect, message.value.state];
-                    console.log(`${code} type user: ${typeof code}`);
                     break;
                 case 'is connected':
                     // define code which will affect the DOM depending on the message
                     activeWorkspaces = message.value.activeTunnels;
                     activeWorkspaces = {...activeWorkspaces};
-                    console.log('activeWorkspaces:', JSON.stringify(activeWorkspaces, null, 2));
                     
                     vscode.postMessage({
                         type: 'getActiveWorkspaces',
                         value: {
                         }
                     });
-                    
                     break;
                 case 'loading':
                     // sets the state of loading for animation
@@ -135,24 +119,19 @@
                         indexOfWorkspace = workspaceToConnect.indexOf(message.value.workspaceId);
                         workspaceToConnect.splice(indexOfWorkspace, 1);
                         workspaceToConnect = [...workspaceToConnect];  // this step is mandatory, so that svelte knows that the Array was updated 
-                        // when not doing this, the changes wont be reflected in the UI
                     } 
                     break;
                 case 'loadingFinished':
-                    // sets the state of loading for animation
                     delete creatingTunnel[message.value.workspaceId];
                     creatingTunnel = {...creatingTunnel};
                     break;
                 case `resourcesDeployed`:
-                    // sets the state of loading for animation
                     indexOfWorkspace = notDeployedWorkspaces.indexOf(message.value.workspaceId);
                     notDeployedWorkspaces.splice(indexOfWorkspace, 1);
                     notDeployedWorkspaces = [...notDeployedWorkspaces];
                     break;
                 case 'removeWorkspace':
-                    // sets the state of loading for animation
                     delete activeWorkspaces[message.value.workspaceId];
-                    
                     vscode.postMessage({
                         type: 'getActiveWorkspaces',
                         value: {
@@ -161,10 +140,8 @@
                     break;
                 case 'connectedWorkspace':
                     currentWorkspace = message.value;
-                    console.log(`currentWorkspace: ${currentWorkspace}`);
                     break;
             }
-            console.log(`teamArray: ${workspaceArray}`);
         });    
     });
 

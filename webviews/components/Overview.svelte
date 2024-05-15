@@ -13,6 +13,7 @@
     let code;
     let connectedWorkspace = false;
     let activeWorkspaces;
+    let workspaceURL;
 
     // function to wakr up on-demand workspaces on Codesphere
     function activateWorkspace (workspaceId, teamDatacenterId){
@@ -25,12 +26,15 @@
         });
     }
 
+    // function to create the deployment URL for the workspace
+    function createWorkspaceURL(dcId, wsId) {
+        workspaceURL = `https://${wsId}-3000.${dcId}.codesphere.com`
+    }
+
     // funtion to set up the vscode server on Codesphere if it is not already running
     function openSocket(workspaceId, workspaceName, teamDatacenterId, teamId) {
         loadingMessage = "Waiting for authorization..."
         creatingTunnel = true;
-        console.log(`creatingTunnel: ${creatingTunnel}`);
-
         vscode.postMessage({
             type: 'opensocket',
             value: {
@@ -127,8 +131,8 @@
             switch (message.type) {
                 case 'overviewData':
                     overviewData = message.value;
-                    console.log(`overviewData: ${JSON.stringify(overviewData)}`);
                     activateWorkspace(overviewData.workspace.id, overviewData.workspace.dataCenterId);
+                    createWorkspaceURL(overviewData.workspace.dataCenterId, overviewData.workspace.id);
                     break;
                 case 'resourcesDeployed':
                     workspaceDeployed = true;
@@ -137,7 +141,6 @@
                     // define code which will affect the DOM depending on the message
                     code = message.value.code; 
                     workspaceAboutToConnect = true;
-                    console.log(`${code} type user: ${typeof code}`);
                     break;
                 case 'loading':
                     // sets the state of loading for animation
@@ -160,38 +163,29 @@
                         });
                     }
                     break;
-                case 'activeWorkspaces':
-                    console.log(`${message.value} typesesefdss user: ${typeof message.value}`);
-                    console.log(`activeWorkspaces3333: ${overviewData.workspace.id}`)
-                    console.log(`activeWorkspaces2222: ${message.value[overviewData.workspace.id]}`);
-                    
+                case 'activeWorkspaces':                    
                     if (message.value[overviewData.workspace.id]) {
-                        console.log(`hallihallo: ${message.value[overviewData.workspace.id]}`);
                         activeWorkspace = true;
                     }
                     break;
                 case 'removeWorkspace':
-                    // sets the state of loading for animation
                     activeWorkspace = false;
-                    
                     vscode.postMessage({
                         type: 'getActiveWorkspaces',
                         value: {
                         }
                     });
                     break;
-                    
-            }
+            }   
         });
     });
 
+    // these function will be executed when opening the webview
     onMount(getActiveWorkspaces);
     onMount(getWorkspaceData)
     onMount(testAccessToken);
     onMount(getconnectedWorkspace);
-
-    
-
+    onMount(createWorkspaceURL);
 </script>
 
 <style>
@@ -315,9 +309,8 @@
         background-color: rgb(43, 44, 44);
     }
 
-    /* CSS für den Text */
     .codeBox {
-        margin-right: 10px; /* Optional: Abstand zwischen Text und Icon */
+        margin-right: 10px; 
     }
 
     .codeAndIcon {
@@ -337,15 +330,23 @@
         cursor: pointer;
         margin-bottom: 10px;
     }
+
+    .openDeploymentButton {
+        margin-bottom: 10px;
+        padding: 5px;
+        background-color: #00BCFF;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
 </style>
 
 <div>
     <div class="back-button" on:click={() => backToSidebar()} role=presentation>
         ◀ Back
     </div>
-    <div>
-        
-    </div>
+    <a href='{workspaceURL}' class="openDeploymentButton">Open deployment</a>
 
     {#if workspaceDeployed === true}
         <div class="workspace-title">
@@ -353,6 +354,7 @@
         </div>
         
     {/if}
+
     {#if workspaceDeployed === false}
         <div class="animation-container">
             <div class="circle-container">
@@ -361,12 +363,13 @@
             </div>
             <p>Connecting to workspace...</p>
         </div>
-        {#if animateCircles} <!-- Nur wenn die Animation aktiv ist -->
+        {#if animateCircles} 
             <script>
-                startAnimation(); // Starte die Animation
+                startAnimation(); 
             </script>
         {/if}
     {/if}
+
     {#if !creatingTunnel && !activeWorkspace && workspaceDeployed === true}
         <button class="connect" on:click={() => openSocket(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId, overviewData.workspace.teamId)}>create tunnel</button>
     {/if} 
@@ -379,9 +382,9 @@
             </div>
             <p>{loadingMessage}</p>
         </div>
-        {#if animateCircles} <!-- Nur wenn die Animation aktiv ist -->
+        {#if animateCircles} 
             <script>
-                startAnimation(); // Starte die Animation
+                startAnimation(); 
             </script>
         {/if}
     {/if}
@@ -416,5 +419,4 @@
             </div>
         </div>
     {/if}
-
 </div>

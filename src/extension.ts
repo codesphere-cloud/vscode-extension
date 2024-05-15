@@ -57,10 +57,6 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log('Congratulations, your extension "codesphere" is now active! You are logged in.');
 	}
 
-  	
-
-
-
   const requiredExtensionId = 'ms-vscode.remote-server';
     const requiredExtension = vscode.extensions.getExtension(requiredExtensionId);
 
@@ -77,7 +73,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
 	vscode.commands.registerCommand('codesphere.reload', async () => {
-		vscode.window.showInformationMessage('you are about to reload the cache');
 		const accessToken = await context.secrets.get("codesphere.accessToken");
 		if (accessToken) {
 			reloadCache(accessToken, (error, teams, workspaces, userData) => {
@@ -85,16 +80,14 @@ export function activate(context: vscode.ExtensionContext) {
 					vscode.window.showErrorMessage('An error occurred while reloading cache: ' + error.message);
 					return;
 				}
-				console.log('teams', JSON.stringify(teams), 'workspaces', JSON.stringify(workspaces), 'userData', JSON.stringify(userData));
-				context.globalState.update("codesphere.teams", teams);
 				context.globalState.update("codesphere.workspaces", workspaces);
 				context.globalState.update("codesphere.userData", userData);
-				vscode.window.showInformationMessage(`Successfully reloaded cache`);
 				vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction', 'codesphere-sidebar');
 			});
 		} else {
 			vscode.window.showErrorMessage('Access token is undefined');
 		}
+		vscode.window.showInformationMessage('reload successful!');
 	}));
 	
 
