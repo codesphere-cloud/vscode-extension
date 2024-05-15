@@ -1,5 +1,4 @@
 <script>
-  import { get } from "http";
     import { onMount } from "svelte";
     import * as vscode from "vscode";
     import "vscode-webview"
@@ -158,7 +157,7 @@
                 case 'connectedWorkspace':
                     console.log(`is it connected?1${message.value}`)
                     console.log(`is it connected?2${overviewData.workspace.id}`)
-                    console.log(`is it connected?3 ${parseInt(message.value) === overviewData.workspace.id}`)
+                    console.log(`is it connected?3${parseInt(message.value) === overviewData.workspace.id}`)
                     if (parseInt(message.value) === parseInt(overviewData.workspace.id)) {
                         console.log(`is it connected? ${message.value === overviewData.workspace.id}`)
                         connectedWorkspace = true;
