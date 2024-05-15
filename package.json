@@ -2,13 +2,15 @@
   "name": "codesphere",
   "displayName": "codesphere",
   "description": "Use Codesphere in vscode",
-  "version": "0.0.10",
+  "version": "0.0.11",
+  "icon": "media/Codesphere.png",
   "engines": {
     "vscode": "^1.87.0"
   },
   "categories": [
     "Other"
   ],
+  "pricing": "Free",
   "activationEvents": [
     "onStartupFinished"
   ],
