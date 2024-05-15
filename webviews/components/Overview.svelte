@@ -1,4 +1,5 @@
 <script>
+  import { get } from "http";
     import { onMount } from "svelte";
     import * as vscode from "vscode";
     import "vscode-webview"
@@ -133,6 +134,7 @@
                     overviewData = message.value;
                     activateWorkspace(overviewData.workspace.id, overviewData.workspace.dataCenterId);
                     createWorkspaceURL(overviewData.workspace.dataCenterId, overviewData.workspace.id);
+                    getconnectedWorkspace();
                     break;
                 case 'resourcesDeployed':
                     workspaceDeployed = true;
