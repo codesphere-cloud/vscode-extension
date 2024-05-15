@@ -3,7 +3,9 @@ prepare:
     - name: Install Dependencies
       command: cd server && npm install
     - name: Install Dependencies
-      command: npm install --no-package-lock --no-save @vscode/vsce              
+      command: npm install --no-package-lock --no-save @vscode/vsce
+    - name: bundle project
+      command: npm run vscode:prepublish
     - name: Package extension
       command: ./node_modules/@vscode/vsce/vsce pack --allow-missing-repository     
 test:
