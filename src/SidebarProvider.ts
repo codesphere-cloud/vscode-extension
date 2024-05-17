@@ -20,6 +20,10 @@ import * as wsLib from 'ws';
 import { sanitizeWorkspaceName } from "./ts/sanatizeWorkspaceNames";
 import axios from 'axios';
 
+const extension_package = require('../package.json')
+const version = extension_package.version
+// Definiere den Pfad zur VSIX-Datei
+const vsixFile = 'codesphere-'+version+'.vsix';
 
 
 
@@ -267,7 +271,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
         afterTunnelInit(uaSocket, sanitizedName).then (async () => {
           await request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-          await request(uaSocket, "terminalStream", { method: "data", data: "./code tunnel --install-extension codesphere-0.0.10.vsix\r"}, "workspace-proxy", 4);
+          await request(uaSocket, "terminalStream", { method: "data", data: "./code tunnel --install-extension" + vsixFile + "\r"}, "workspace-proxy", 4);
         });
         
         tunnelIsReady(uaSocket).then (async () => {
