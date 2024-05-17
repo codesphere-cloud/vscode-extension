@@ -2,10 +2,10 @@
 
 All notable changes to the "codesphere" extension will be documented in this file.
 
-## 1.0.0 (2024-05-17)
+## 0.1.11 (2024-05-17)
 
-- preview release
-- connect your workspaces with your vscode via tunnels
-- start CI-Pipeline stages in vscode
-- open deployment in vscode
-- bidirectional sync between codesphere and vscode
+- Alpha pre-release
+- Connect your workspaces with your vscode via tunnels
+- Start CI-Pipeline stages in vscode
+- Open deployment in vscode
+- Bidirectional sync between Codesphere and VScode
