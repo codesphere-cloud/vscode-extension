@@ -271,7 +271,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
         afterTunnelInit(uaSocket, sanitizedName).then (async () => {
           await request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-          await request(uaSocket, "terminalStream", { method: "data", data: "./code tunnel --install-extension" + vsixFile + "\r"}, "workspace-proxy", 4);
+          await request(uaSocket, "terminalStream", { method: "data", data: "./code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
         });
         
         tunnelIsReady(uaSocket).then (async () => {
