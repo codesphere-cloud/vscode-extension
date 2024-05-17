@@ -2,7 +2,7 @@
 
 [https://discord.gg/codesphere}(Codesphere Discord Community)
 
-# Support email adress
+# Support Email Address
 
-send us an email:
-team@codesphere.com
+Send us an email:
+support@codesphere.com

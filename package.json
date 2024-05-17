@@ -1,7 +1,7 @@
 {
   "name": "codesphere",
-  "displayName": "codesphere",
-  "description": "Use Codesphere in vscode",
+  "displayName": "Codesphere",
+  "description": "Connect VS Code to your Codesphere workspaces",
   "version": "0.0.11",
   "icon": "media/Codesphere.png",
   "engines": {
@@ -53,7 +53,7 @@
     "commands": [
       {
         "command": "codesphere.submenu",
-        "title": "logout",
+        "title": "Logout",
         "icon": "$(debug-disconnect)",
         "category": "Codesphere"
       },
@@ -64,13 +64,13 @@
       },
       {
         "command": "codesphere.reload",
-        "title": "refresh",
+        "title": "Refresh",
         "icon": "$(refresh)",
         "category": "Codesphere"
       },
       {
         "command": "codesphere.refresh",
-        "title": "refresh all webviews"
+        "title": "Refresh all webviews"
       }
     ]
   },
