@@ -156,56 +156,73 @@
     .workspaceAvatar {
         width: 25px;
         height: 25px;
-        border-radius: 20%;
+        border-radius: 2px;
+        object-fit: cover;
     }
 
     .teams {
         display: flex;
         flex-direction: row;
+        justify-content: space-between;
         align-items: center;
         gap: 10px;
         cursor: pointer;
+        font-weight: 600;
     }
 
-    .teamTree > div {
+    /* .teamTree > div {
         margin-bottom: 10px;
         margin-top: 10px;
+    } */
+
+    .teamTree {
+        padding: 8px 0px 8px 0px;
+        border-bottom: 1px solid #80808026;
+        display: flex;
+        flex-direction: column;
+        height: fit-content
     }
 
-    .Trennstrich {
-        border: 0;
-        height: 1px;
-        background-image: linear-gradient(to right, rgba(187, 170, 170, 0), rgba(104, 79, 79, 0.75), rgba(122, 111, 111, 0));
-    }
+    /* .Trennstrich {
+        border-bottom: .5px solid var(--sidebar-item-border-color)
+    } */
 
     .userInfo {
         display: flex;
         flex-direction: row;
         align-items: center;
+        justify-content: space-between;
         gap: 10px;
-        padding-bottom: 20px;
+        padding: 8px 0px 16px 0px;
     }
 
     .userAvatar {
-        width: 40px;
-        height: 40px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
+        object-fit: cover;
     }
 
     .workspace {
-        margin-left: 40px;
         cursor: pointer;
-        font-size: 15px;
         display: flex; /* Flexbox verwenden */
         align-items: center; /* Vertikal zentrieren */
+        transition: color .2s;
+    }
+
+    .workspace:hover {
+        color: white!important;
     }
 
     .workspaceList {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+        position: relative;
         overflow-x: auto;
         white-space: nowrap;
+        padding-left: 16px;
+    }
+
+    .workspaceList:nth-child(2) {
+        padding-top:8px
     }
 
     .workspaceBox {
@@ -221,7 +238,10 @@
         display: none;
     }
     .accordion-content.show {
-        display: block;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        
     }
 
     .isActiveNote {
@@ -229,46 +249,62 @@
         font-size: 5px;
     }
 
+    .height-indicator {
+        position: absolute;
+        left: 8px;
+        height: 100%;
+        border-left: .5px solid #80808026;;
+    }
+
 
 </style>
 
 <div>
     <div class="userInfo">
+        <h2>Your Teams</h2>
         <img src={`https://storage.googleapis.com/codesphere-avatars/users/${user.userId}/${user.avatarId}`} alt="User Avatar" class="userAvatar">
-        <h1>{user.firstName} {user.lastName}</h1>
     </div>
 
     {#each teamArray as team (team.id)}
         <div class="teamTree" key={team.id}>
             <div class="teams" on:click={() => toggleAccordion(team.id)} role="presentation">
-                {#if team.avatarUrl}
+                <div style="display:flex">
+                <!-- Toggle arrow icon -->
+                {#if team.open}
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                </svg>                   
+                {:else}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                  </svg>                 
+                {/if}
+                <span class="">{team.name}</span>
+            </div>
+
+            {#if team.avatarUrl}
                 <img src={team.avatarUrl} alt="Team Avatar" class="workspaceAvatar">
             {:else}
                 <img src="https://cdn-icons-png.flaticon.com/512/4231/4231148.png" alt="Default Avatar" class="workspaceAvatar">
             {/if}
-                
-                <h2 class="">{team.name}</h2>
-                <!-- Toggle arrow icon -->
-                {#if team.open}
-                    <span>▼</span>
-                {:else}
-                    <span>►</span>
-                {/if}
-                
             </div>
             <div class="workspaceList accordion-content" class:show={team.open}>
+                <div class="height-indicator"></div>
                 {#if workspaceArray[team.id]}
                     {#each workspaceArray[team.id] as workspace}
                         <div class="workspaceBox">
                             <!-- Hier Workspace-Informationen -->
                             <div class="workspaceAccordion" on:click={() => openOverview(workspace.id, team.id) } role="presentation">
-                                <p class="workspace" style="color: {activeWorkspaces[workspace.id] ? 'green' : 'inherit'}">
-                                    <span>►</span>
-                                    {workspace.name}
+                                <h4 class="workspace" style="color: {activeWorkspaces[workspace.id] ? 'green' : 'inherit'}">
+                                      
+                                    <span>{workspace.name}</span>
                                     {#if currentWorkspace === workspace.id}
                                         <span class="isActiveNote">active Tunnel</span>
                                     {/if}
-                                </p>
+                                    </h4>
+                                    <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"  width="16px" height="16px">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                      </svg> -->
                             </div>
                         </div>
                     {/each}
@@ -276,6 +312,6 @@
             </div>
         </div>
         <!--Trennstrich-->
-        <hr class="Trennstrich">
+        <!-- <hr class="Trennstrich"> -->
     {/each}    
 </div>
