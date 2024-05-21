@@ -183,7 +183,7 @@
 </div>
 
 <h1 class="header">Sign in</h1>
-
+<!--
 <div class="oauth">
     <div class="oauth-button github-oauth-button">
         <button class="github-button oauth-inner">
@@ -254,7 +254,7 @@
 <div class="divider">
     <span>or sign in via email</span>
 </div>
-    
+-->    
 
 <div class="form-container">
     <div class="email-container">
