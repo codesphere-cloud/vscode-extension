@@ -53,8 +53,8 @@
     "commands": [
       {
         "command": "codesphere.submenu",
-        "title": "Logout",
-        "icon": "$(debug-disconnect)",
+        "title": "logout",
+        "icon": "$(log-out)",
         "category": "Codesphere"
       },
       {
