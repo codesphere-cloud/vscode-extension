@@ -34,9 +34,22 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		if (rootPath) {
+			if (!context.globalState.get("codesphere.currentWorkspace") || context.globalState.get("codesphere.currentWorkspace") === "") {
+				console.log('hihihihi')
+				vscode.window.showInformationMessage('No workspace folder found');
+				context.subscriptions.push(
+					vscode.window.registerWebviewViewProvider(
+					"codesphere-noworkspace",
+					noCurrentWorkspaceProvider
+				)
+			);
+			}
+			console.log('No workspace folder found');
 			const fileTreeProvider = new FileTreeProvider(rootPath);
-	    	vscode.window.createTreeView('workspace-filetree', { treeDataProvider: fileTreeProvider });
-		}
+			vscode.window.createTreeView('workspace-filetree', { treeDataProvider: fileTreeProvider });
+		} 
+			
+		
 
 		const userData: any = context.globalState.get("codesphere.userData");
 		const gitEmail: string = userData.email || "";
