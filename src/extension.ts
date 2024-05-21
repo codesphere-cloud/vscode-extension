@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log('roothPath is: ', rootPath);
 
 		if (!rootPath) {
-			vscode.window.showInformationMessage('No workspace folder found');
+			vscode.window.showInformationMessage('No workspace folder found1');
 			context.subscriptions.push(
 				vscode.window.registerWebviewViewProvider(
 				"codesphere-noworkspace",
@@ -44,7 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
 				)
 			);
 			}
-			console.log('No workspace folder found');
+			console.log('No workspace folder found2');
 			const fileTreeProvider = new FileTreeProvider(rootPath);
 			vscode.window.createTreeView('workspace-filetree', { treeDataProvider: fileTreeProvider });
 		} 
