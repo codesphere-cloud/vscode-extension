@@ -2,8 +2,12 @@ prepare:
   steps:
     - name: Install Dependencies
       command: cd server && npm install
+    - name: Change node version
+      command: sudo -u admin n 18.18.0   
     - name: Install Dependencies
-      command: npm install --no-package-lock --no-save @vscode/vsce
+      command: npm install @vscode/vsce
+    - name: Compile project
+      command: npm run compile      
     - name: bundle project
       command: npm run vscode:prepublish
     - name: Package extension
