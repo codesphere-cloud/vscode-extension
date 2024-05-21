@@ -374,7 +374,7 @@ const waitForCiPipeline = async (deploymentSocket: any) => {
         deploymentSocket.on("message", messageHandler);
         deploymentSocket.on("error", errorHandler);
     });
-}
+};
 
 
                 
