@@ -35,7 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		if (rootPath) {
 			if (!context.globalState.get("codesphere.currentWorkspace") || context.globalState.get("codesphere.currentWorkspace") === "") {
-				console.log('hihihihi')
+				console.log('hihihihi');
 				vscode.window.showInformationMessage('No workspace folder found');
 				context.subscriptions.push(
 					vscode.window.registerWebviewViewProvider(
