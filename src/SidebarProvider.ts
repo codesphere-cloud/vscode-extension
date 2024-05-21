@@ -21,8 +21,8 @@ import { sanitizeWorkspaceName } from "./ts/sanatizeWorkspaceNames";
 import axios from 'axios';
 import { exec } from 'child_process';
 
-const extension_package = require('../package.json')
-const version = extension_package.version
+const extension_package = require('../package.json');
+const version = extension_package.version;
 // Definiere den Pfad zur VSIX-Datei
 const vsixFile = 'codesphere-'+version+'.vsix';
 
@@ -581,7 +581,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
                 console.log(`stdout: ${stdout}`);
               });
-              
+
           break;
         }
         
