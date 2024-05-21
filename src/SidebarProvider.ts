@@ -260,7 +260,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           this._view?.webview.postMessage({ 
             type: "loading", 
             value: {   
-              'state': `Setting up server...`,
+              'state': `Setting up server. This might take up to 2 minutes...`,
               'workspaceId': `${workspaceId}`
             }
         });
