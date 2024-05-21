@@ -1,16 +1,71 @@
 import * as vscode from 'vscode';
 import { SidebarProvider } from './SidebarProvider';
+import { FileTreeProvider } from './FileTreeProvider';
+import { NoCurrentWorkspaceProvider } from './NoCurrentWorkspaceProvider';
 import { reloadCache } from './ts/reloadCache';
 import { exec } from 'child_process';
 const axios = require('axios');
 
 
+function getWorkspaceRootPath(): string  {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders && workspaceFolders.length > 0) {
+        return workspaceFolders[0].uri.fsPath;
+    }
+    return ``;
+}
+
 
 export function activate(context: vscode.ExtensionContext) {
 
-	const sidebarProvider = new SidebarProvider(context.extensionUri, context);
+		const sidebarProvider = new SidebarProvider(context.extensionUri, context);
+		const noCurrentWorkspaceProvider = new NoCurrentWorkspaceProvider(context.extensionUri);
+		const rootPath: string = getWorkspaceRootPath();
+		console.log('roothPath is: ', rootPath);
+
+		if (!rootPath) {
+			vscode.window.showInformationMessage('No workspace folder found');
+			context.subscriptions.push(
+				vscode.window.registerWebviewViewProvider(
+				"codesphere-noworkspace",
+				noCurrentWorkspaceProvider
+				)
+			);
+		}
+
+		if (rootPath) {
+			if (!context.globalState.get("codesphere.currentWorkspace") || context.globalState.get("codesphere.currentWorkspace") === "") {
+				console.log('hihihihi')
+				vscode.window.showInformationMessage('No workspace folder found');
+				context.subscriptions.push(
+					vscode.window.registerWebviewViewProvider(
+					"codesphere-noworkspace",
+					noCurrentWorkspaceProvider
+				)
+			);
+			}
+			console.log('No workspace folder found');
+			const fileTreeProvider = new FileTreeProvider(rootPath);
+			vscode.window.createTreeView('workspace-filetree', { treeDataProvider: fileTreeProvider });
+		} 
+			
+		
+
+		const userData: any = context.globalState.get("codesphere.userData");
+		const gitEmail: string = userData.email || "";
+		let gitFirstName: string = userData.firstName || "";
+		let gitLastName: string = userData.lastName || "";
+
+		if (!gitFirstName && !gitLastName && gitEmail) {
+			const emailParts = gitEmail.split("@");
+			if (emailParts.length > 0) {
+				gitFirstName = emailParts[0];
+			}
+		}
 
 	const bashcommand = 'echo $WORKSPACE_ID';
+	const gitBashEmail = `git config --global user.email "${gitEmail}"`;
+	const gitBashName = `git config --global user.name "${gitFirstName} ${gitLastName}"`;
 	let workspaceId: string;
 
 	// prüfen ob man sich in einem remote tunnmel befindet. Wenn ja dann wird der ordner angepasst.
@@ -36,6 +91,34 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	exec (gitBashEmail, (error, stdout, stderr) => {
+		if (error) {
+			console.error(`exec error: ${error}`);
+			return;
+		}
+
+		if (stderr) {
+			console.error(`stderr: ${stderr}`);
+			return;
+		}
+
+		console.log(`stdout: ${stdout}`);
+	});
+
+	exec (gitBashName, (error, stdout, stderr) => {
+		if (error) {
+			console.error(`exec error: ${error}`);
+			return;
+		}
+
+		if (stderr) {
+			console.error(`stderr: ${stderr}`);
+			return;
+		}
+
+		console.log(`stdout: ${stdout}`);
+	});
+
 
 
 	context.subscriptions.push(
@@ -56,20 +139,6 @@ export function activate(context: vscode.ExtensionContext) {
 		context.globalState.update("codesphere.isLoggedIn", true);
 		console.log('Congratulations, your extension "codesphere" is now active! You are logged in.');
 	}
-
-  const requiredExtensionId = 'ms-vscode.remote-server';
-    const requiredExtension = vscode.extensions.getExtension(requiredExtensionId);
-
-    if (!requiredExtension) {
-        vscode.window.showInformationMessage(
-            'The required extension is not installed. Click Install to install it now.',
-            'Install'
-        ).then(selection => {
-            if (selection === 'Install') {
-                vscode.commands.executeCommand('workbench.extensions.installExtension', requiredExtensionId);
-            }
-        });
-    }
 
   context.subscriptions.push(
 	vscode.commands.registerCommand('codesphere.reload', async () => {

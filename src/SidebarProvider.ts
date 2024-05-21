@@ -19,9 +19,10 @@ import { readBashFile } from "./ts/readBash";
 import * as wsLib from 'ws';
 import { sanitizeWorkspaceName } from "./ts/sanatizeWorkspaceNames";
 import axios from 'axios';
+import { exec } from 'child_process';
 
-const extension_package = require('../package.json')
-const version = extension_package.version
+const extension_package = require('../package.json');
+const version = extension_package.version;
 // Definiere den Pfad zur VSIX-Datei
 const vsixFile = 'codesphere-'+version+'.vsix';
 
@@ -259,7 +260,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           this._view?.webview.postMessage({ 
             type: "loading", 
             value: {   
-              'state': `Setting up server...`,
+              'state': `Setting up server. This might take up to 2 minutes...`,
               'workspaceId': `${workspaceId}`
             }
         });
@@ -537,6 +538,50 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           } catch (error) {
               console.log(error);
           }
+
+          const userGitData: any = cache.get("codesphere.userData");
+              const gitEmail: string = userGitData.email || "";
+              let gitFirstName: string = userGitData.firstName || "";
+              let gitLastName: string = userGitData.lastName || "";
+
+              if (!gitFirstName && !gitLastName && gitEmail) {
+                const emailParts = gitEmail.split("@");
+                if (emailParts.length > 0) {
+                  gitFirstName = emailParts[0];
+                }
+              }
+
+              const gitBashEmail = `git config --global user.email "${gitEmail}"`;
+              const gitBashName = `git config --global user.name "${gitFirstName} ${gitLastName}"`;
+
+              exec (gitBashEmail, (error, stdout, stderr) => {
+                if (error) {
+                  console.error(`exec error: ${error}`);
+                  return;
+                }
+
+                if (stderr) {
+                  console.error(`stderr: ${stderr}`);
+                  return;
+                }
+
+                console.log(`stdout: ${stdout}`);
+              });
+
+              exec (gitBashName, (error, stdout, stderr) => {
+                if (error) {
+                  console.error(`exec error: ${error}`);
+                  return;
+                }
+
+                if (stderr) {
+                  console.error(`stderr: ${stderr}`);
+                  return;
+                }
+
+                console.log(`stdout: ${stdout}`);
+              });
+
           break;
         }
         
