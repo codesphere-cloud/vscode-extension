@@ -1,26 +1,54 @@
 import * as vscode from 'vscode';
 import { SidebarProvider } from './SidebarProvider';
+import { FileTreeProvider } from './FileTreeProvider';
+import { NoCurrentWorkspaceProvider } from './NoCurrentWorkspaceProvider';
 import { reloadCache } from './ts/reloadCache';
 import { exec } from 'child_process';
 const axios = require('axios');
 
 
+function getWorkspaceRootPath(): string  {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders && workspaceFolders.length > 0) {
+        return workspaceFolders[0].uri.fsPath;
+    }
+    return ``;
+}
+
 
 export function activate(context: vscode.ExtensionContext) {
 
-	const sidebarProvider = new SidebarProvider(context.extensionUri, context);
+		const sidebarProvider = new SidebarProvider(context.extensionUri, context);
+		const noCurrentWorkspaceProvider = new NoCurrentWorkspaceProvider(context.extensionUri);
+		const rootPath: string = getWorkspaceRootPath();
+		console.log('roothPath is: ', rootPath);
 
-	const userData: any = context.globalState.get("codesphere.userData");
-	const gitEmail: string = userData.email || "";
-	let gitFirstName: string = userData.firstName || "";
-	let gitLastName: string = userData.lastName || "";
-
-	if (!gitFirstName && !gitLastName && gitEmail) {
-		const emailParts = gitEmail.split("@");
-		if (emailParts.length > 0) {
-			gitFirstName = emailParts[0];
+		if (!rootPath) {
+			vscode.window.showInformationMessage('No workspace folder found');
+			context.subscriptions.push(
+				vscode.window.registerWebviewViewProvider(
+				"codesphere-noworkspace",
+				noCurrentWorkspaceProvider
+				)
+			);
 		}
-	}
+
+		if (rootPath) {
+			const fileTreeProvider = new FileTreeProvider(rootPath);
+	    	vscode.window.createTreeView('workspace-filetree', { treeDataProvider: fileTreeProvider });
+		}
+
+		const userData: any = context.globalState.get("codesphere.userData");
+		const gitEmail: string = userData.email || "";
+		let gitFirstName: string = userData.firstName || "";
+		let gitLastName: string = userData.lastName || "";
+
+		if (!gitFirstName && !gitLastName && gitEmail) {
+			const emailParts = gitEmail.split("@");
+			if (emailParts.length > 0) {
+				gitFirstName = emailParts[0];
+			}
+		}
 
 	const bashcommand = 'echo $WORKSPACE_ID';
 	const gitBashEmail = `git config --global user.email "${gitEmail}"`;

@@ -28,10 +28,22 @@
     "views": {
       "codesphere-sidebar-view": [
         {
+          "type": "tree",
+          "id": "workspace-filetree",
+          "name": "Workspace filetree",
+          "when": "codesphere.isLoggedIn && codesphere.currentWorkspace"
+        },
+        {
+          "type": "webview",
+          "id": "codesphere-noworkspace",
+          "name": "Workspace filetree",
+          "when": "codesphere.isLoggedIn && !codesphere.currentWorkspace"
+        },
+        {
           "type": "webview",
           "id": "codesphere-sidebar",
           "name": "Codesphere",
-          "icon": "media/codesphere.svg",
+          "icon": "media/Codesphere.svg",
           "contextualTitle": "Codesphere"
         }
       ]
