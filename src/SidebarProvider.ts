@@ -510,7 +510,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             });
           });
 
-          const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken");
+          const accessToken = await cache.get("codesphere.accessTokenCache");
           try {
             const teams = await listTeams(accessToken as string);
             cache.update("codesphere.teams", teams);

@@ -270,7 +270,7 @@ const wakeUpWorkspace = async (deploymentSocket: any) => {
         const messageHandler = (msg: any) => {
             try {
                 let msgTest = msg.toString();
-                if (msgTest.includes("Workspace already deployed") || msgTest.includes("Workspace already deployed")) {
+                if (msgTest.includes("Workspace already deployed") || msgTest.includes("Resources are deployed")) {
                     deploymentSocket.off("message", messageHandler);
                     resolve();
                 }
