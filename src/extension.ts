@@ -10,7 +10,21 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const sidebarProvider = new SidebarProvider(context.extensionUri, context);
 
+	const userData: any = context.globalState.get("codesphere.userData");
+	const gitEmail: string = userData.email || "";
+	let gitFirstName: string = userData.firstName || "";
+	let gitLastName: string = userData.lastName || "";
+
+	if (!gitFirstName && !gitLastName && gitEmail) {
+		const emailParts = gitEmail.split("@");
+		if (emailParts.length > 0) {
+			gitFirstName = emailParts[0];
+		}
+	}
+
 	const bashcommand = 'echo $WORKSPACE_ID';
+	const gitBashEmail = `git config --global user.email "${gitEmail}"`;
+	const gitBashName = `git config --global user.name "${gitFirstName} ${gitLastName}"`;
 	let workspaceId: string;
 
 	// prüfen ob man sich in einem remote tunnmel befindet. Wenn ja dann wird der ordner angepasst.
@@ -34,6 +48,34 @@ export function activate(context: vscode.ExtensionContext) {
 			const pwdUri = vscode.Uri.parse('home/user/app');
 			vscode.commands.executeCommand('vscode.openFolder', pwdUri);
 		}
+	});
+
+	exec (gitBashEmail, (error, stdout, stderr) => {
+		if (error) {
+			console.error(`exec error: ${error}`);
+			return;
+		}
+
+		if (stderr) {
+			console.error(`stderr: ${stderr}`);
+			return;
+		}
+
+		console.log(`stdout: ${stdout}`);
+	});
+
+	exec (gitBashName, (error, stdout, stderr) => {
+		if (error) {
+			console.error(`exec error: ${error}`);
+			return;
+		}
+
+		if (stderr) {
+			console.error(`stderr: ${stderr}`);
+			return;
+		}
+
+		console.log(`stdout: ${stdout}`);
 	});
 
 
