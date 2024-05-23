@@ -12,6 +12,7 @@
     "vscode": "^1.87.0"
   },
   "publisher": "Codesphere",
+  "pre-release": true,
   "categories": [
     "Other"
   ],
@@ -94,7 +95,7 @@
         "title": "Open Overview"
       },
       {
-        "command": "codesphere.bachToMenu",
+        "command": "codesphere.backToMenu",
         "title": "Back to menu"
       }
     ]
