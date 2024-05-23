@@ -713,7 +713,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             return;
           }
           console.log('tests2');
-          const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+          const delay = (ms: any) => new Promise(resolve => setTimeout(resolve, ms));
           const workspaceId = data.value.workspaceId;
           const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
           const accessToken = cache.get("codesphere.accessTokenCache");
