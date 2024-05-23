@@ -191,7 +191,38 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	  );
 
-	  
+	  context.subscriptions.push(
+		vscode.commands.registerCommand('codesphere.backToMenu', async () => {
+			vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
+			context.subscriptions.push(
+				vscode.window.registerWebviewViewProvider(
+				"codesphere-noworkspace",
+				noCurrentWorkspaceProvider
+			));
+		})
+	  );
+
+	  context.subscriptions.push(
+		vscode.commands.registerCommand('codesphere.openOverView', async () => {
+			vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
+
+			if (context.globalState.get("codesphere.currentWorkspace") === workspaceId) {
+				const fileTreeProvider = new FileTreeProvider(rootPath);
+				context.subscriptions.push(
+					vscode.window.createTreeView(
+						'workspace-filetree', 
+						{ treeDataProvider: fileTreeProvider }
+						)
+				);
+			} else {
+				context.subscriptions.push(
+					vscode.window.registerWebviewViewProvider(
+					"codesphere-noworkspace",
+					noCurrentWorkspaceProvider
+				));
+			}
+		})
+	  );
 };
 
 

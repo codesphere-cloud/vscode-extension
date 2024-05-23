@@ -20,6 +20,9 @@
     let testStageSuccess = '';
     let runStageSate = false; // Zustand für die Animation
     let runStageSuccess = '';
+    let runStageStatus;
+    let testStageStatus;
+    let prepareStageStatus;
 
     // function to wakr up on-demand workspaces on Codesphere
     function activateWorkspace (workspaceId, teamDatacenterId){
@@ -240,6 +243,19 @@
                         runStageSuccess = message.value.result;
                     }
                     break;
+                case 'ciPipelineStatus':
+                    prepareStageSuccess = message.value.prepare;
+                    if (prepareStageSuccess === 'running') {
+                        prepareStageSate = true;
+                    }
+                    testStageSuccess = message.value.test;
+                    if (testStageSuccess === 'running') {
+                        testStageSate = true;
+                    }
+                    runStageSuccess = message.value.run;
+                    if (runStageSuccess === 'running') {
+                        runStageSate = true;
+                    }
             }   
         });
     });
