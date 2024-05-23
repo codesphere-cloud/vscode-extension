@@ -641,8 +641,8 @@
     {#if activeWorkspace === true && workspaceDeployed === true && connectedWorkspace === false}
         <div class="codeProvider">
             <div class="codeProviderInside">
-                <p class="spaceForLink">Workspace is connected</p>
-                <button on:click= {() => openTunnel(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId, overviewData.workspace.teamId)}> open connection</button>
+                <p class="spaceForLink">Workspace is ready to connect</p>
+                <button on:click= {() => openTunnel(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId, overviewData.workspace.teamId)}>Connect</button>
             </div>
         </div>
     {/if}
