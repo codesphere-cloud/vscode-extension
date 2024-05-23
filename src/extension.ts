@@ -21,6 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const sidebarProvider = new SidebarProvider(context.extensionUri, context);
 		const noCurrentWorkspaceProvider = new NoCurrentWorkspaceProvider(context.extensionUri);
 		const rootPath: string = getWorkspaceRootPath();
+		const fileTreeProvider = new FileTreeProvider(rootPath);
 		console.log('roothPath is: ', rootPath);
 
 		if (!rootPath) {
@@ -44,7 +45,6 @@ export function activate(context: vscode.ExtensionContext) {
 			);
 			}
 			console.log('No workspace folder found2');
-			const fileTreeProvider = new FileTreeProvider(rootPath);
 			context.subscriptions.push(
 				vscode.window.createTreeView(
 					'workspace-filetree', 
@@ -203,11 +203,10 @@ export function activate(context: vscode.ExtensionContext) {
 	  );
 
 	  context.subscriptions.push(
-		vscode.commands.registerCommand('codesphere.openOverView', async () => {
+		vscode.commands.registerCommand('codesphere.openOverView', async (workspaceID) => {
 			vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
 
-			if (context.globalState.get("codesphere.currentWorkspace") === workspaceId) {
-				const fileTreeProvider = new FileTreeProvider(rootPath);
+			if (context.globalState.get("codesphere.currentWorkspace") === workspaceID) {
 				context.subscriptions.push(
 					vscode.window.createTreeView(
 						'workspace-filetree', 
