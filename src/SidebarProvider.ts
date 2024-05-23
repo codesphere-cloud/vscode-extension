@@ -661,6 +661,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           );
           
           cache.update("codesphere.currentconnectedWorkspace", selectedWorkspace);
+
+          if (cache.get("codesphere.currentWorkspace") === selectedWorkspace) {
+            vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', selectedWorkspace);
+          }
           
           // Check if the workspace exists before using it
           if (selectedWorkspace) {            
@@ -697,6 +701,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             return;
           }
           webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
+          vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
           break;
         }
       }
