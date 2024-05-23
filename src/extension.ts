@@ -83,7 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
 		workspaceId = stdout ? stdout.trim() : ``;
 		context.globalState.update("codesphere.currentWorkspace", workspaceId);
 
-		// vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
+		vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
 
 
 		if (workspaceId !== "") {

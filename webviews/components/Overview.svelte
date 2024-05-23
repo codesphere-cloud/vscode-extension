@@ -161,6 +161,15 @@
         startCiStage(workspaceId, stage, dataCenterId);
     }
 
+    function getCiStageStatus(workspaceId, stage) {
+        vscode.postMessage({
+            type: 'getCiStageStatus',
+            value: {
+                workspaceId: workspaceId
+            }
+        });
+    }
+
     onMount(() => {
         
         window.addEventListener('message', event => {
