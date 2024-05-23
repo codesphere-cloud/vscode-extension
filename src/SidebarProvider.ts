@@ -87,8 +87,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
       // Check if the workspace exists before using it
       if (matchingObject) {
-        console.log('selectedWorkspace', matchingObject);
-        
         this._view?.webview.postMessage({
           type: "overviewData",
           value: {
@@ -273,7 +271,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
         afterTunnelInit(uaSocket, sanitizedName).then (async () => {
           await request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-          await request(uaSocket, "terminalStream", { method: "data", data: "./code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
+          await request(uaSocket, "terminalStream", { method: "data", data: "./code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4); // todo: change to published version
         });
         
         tunnelIsReady(uaSocket).then (async () => {
@@ -297,8 +295,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
           let activeTunnel2 = cache.get(`codesphere.activeTunnel`);
           this._view?.webview.postMessage({ type: "activeWorkspaces", value: activeTunnel2 });
-          
-          vscode.window.showInformationMessage('Server is up');
 
           request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionName}, "workspace-proxy", 5);
 
@@ -476,15 +472,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         
           signIn(data.value.email, data.value.password, async (error, sessionId) => {
             if (error) {
-              console.log('error2', error);
               this._view?.webview.postMessage({ type: "onError", value: error });
               this._view?.webview.postMessage({ type: "onError", value: `${error.message}` });
-              vscode.window.showErrorMessage('An error occurred while signing in: ' + error.message);
-              console.log('error34', error.message);
               return;
             }
-        
-            vscode.window.showInformationMessage(`Successfully signed in`);
             
             this.extensionContext.secrets.store("codesphere.sessionId", sessionId as string);
             
@@ -502,8 +493,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
               this.extensionContext.secrets.store("codesphere.accessToken", accessToken);
              cache.update("codesphere.accessTokenCache", accessToken);
-
-              vscode.window.showInformationMessage('Successfully generated access token');
               
              webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
               vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
@@ -629,7 +618,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           await request(uaSocket2, "startWorkspace", { workspaceId: workspaceId }, "deployment-service", 3);
 
           await codePromise.then(async () => {
-            console.log('workspace is up');
             this._view?.webview.postMessage({ 
               type: "resourcesDeployed", 
               value: {   
@@ -710,21 +698,16 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           if (!data.value) {
             return;
           }
-          console.log('tests2');
           const delay = (ms: any) => new Promise(resolve => setTimeout(resolve, ms));
           const workspaceId = data.value.workspaceId;
           const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
           const accessToken = cache.get("codesphere.accessTokenCache");
-          console.log('tests3')
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
-          console.log('tests4')
           let uaSocketconnect2 = getUaSocket();
 
           let prepare;
           let test;
           let run;
-
-          console.log('tests', workspaceId);
 
           const prepareCheck = checkCiPipelineState(uaSocketconnect2, 35);
           const testCheck = checkCiPipelineState(uaSocketconnect2, 136);
@@ -732,27 +715,20 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
           testCheck.then((resultTest: any) => {
             test = resultTest;
-            console.log('tests122', test);
           }
           );
 
           runCheck.then((resultRun: any) => {
             run = resultRun;
-            console.log('tests122', run);
           });
 
           prepareCheck.then((result: any) => {
             prepare = result;
-            console.log('tests122', prepare);
           });
           
-          await delay(100);
-          console.log('tests5')
           await request(uaSocketconnect2, "executionInfo", { workspaceId: workspaceId, stage: 'test' }, "workspace-proxy", 136);
           
-          
-          await delay(200);
-          console.log('tests6')
+          await delay(100);
           await request(uaSocketconnect2, "executionInfo", { workspaceId: workspaceId, stage: 'run' }, "workspace-proxy", 237);
           
           await delay(100);
@@ -760,7 +736,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           await request(uaSocketconnect2, "executionInfo", { workspaceId: workspaceId, stage: 'prepare' }, "workspace-proxy", 35);
           
           await delay(100);
-          console.log('tests7')
           
           this._view?.webview.postMessage({
             type: "ciPipelineStatus",

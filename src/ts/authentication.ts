@@ -44,13 +44,10 @@ export function genAccessToken(sessionId: string, callback: (error: any, accessT
         id: sessionId
     };
 
-    console.log('Generating access token...');
-
     axios.post(genAccessTokenUrl, requestData)
         .then(response => {
             const { data, status } = response;
             if (status === 200) {
-                vscode.window.showInformationMessage(`Successfully signed in2`);
                 console.log('body', data);
                 const accessToken = data.data.accessToken;
                 callback(null, accessToken); // accessToken an die Callback-Funktion übergeben

@@ -11,8 +11,6 @@ export async function listTeams(accessToken: string): Promise<any[]> {
         });
 
         if (response.data.code === "Ok") {
-            console.log("Teams erfolgreich abgerufen:");
-            console.log(response.data.data); // Hier können Sie die Teams-Liste im Konsolenlog anzeigen lassen
             return response.data.data;
         } else {
             throw new Error(`Fehler beim Abrufen der Teams: ${response.data.errMessage}`);
@@ -25,7 +23,6 @@ export async function listTeams(accessToken: string): Promise<any[]> {
   // Diese Funktion sendet einen POST-Request an die API, um die Workspaces abzurufen
   export async function listWorkspaces(accessToken: string, teams: Array<any>): Promise<{ [teamId: string]: Array<any> }> {
     try {
-        console.log(`${teams} so sehen die teams aus`);
         const workspacePromises = teams.map(async (team) => {
             const response = await axios.post('https://codesphere.com/workspace-service/listWorkspaces', {
                 teamId: team.id
@@ -49,8 +46,6 @@ export async function listTeams(accessToken: string): Promise<any[]> {
             workspaceMap[team.id] = workspaceArrays[index];
         });
 
-        console.log(`${workspaceMap} so sieht das workspaceMap aus`);
-
         return workspaceMap;
     } catch (error) {
         throw new Error(`Fehler beim Abrufen der Workspaces: ${error}`);
@@ -67,8 +62,6 @@ export async function getUserData(accessToken: string): Promise<any[]> {
         });
 
         if (response.data.code === "Ok") {
-            console.log("User erfolgreich abgerufen:");
-            console.log(response.data.data); // Hier können Sie die Benutzerdaten im Konsolenlog anzeigen lassen
             return response.data.data;
         } else {
             throw new Error(`Fehler beim Abrufen des Users: ${response.data.errMessage}`);
