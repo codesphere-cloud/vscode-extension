@@ -663,7 +663,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           
           cache.update("codesphere.currentconnectedWorkspace", selectedWorkspace);
 
-          if (selectedWorkspace === cache.get("codesphere.currentconnectedWorkspace")) {
+          if (selectedWorkspace === cache.get("codesphere.currentWorkspace")) {
             vscode.commands.executeCommand('codesphere.openOverView', selectedWorkspace);
           }
           // Check if the workspace exists before using it

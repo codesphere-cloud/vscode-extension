@@ -194,7 +194,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	  context.subscriptions.push(
 		vscode.commands.registerCommand('codesphere.openOverView', async (workspaceID) => {
-			vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
+			vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceID);
 		}));
 };
 
