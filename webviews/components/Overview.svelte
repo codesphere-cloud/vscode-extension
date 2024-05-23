@@ -20,9 +20,6 @@
     let testStageSuccess = '';
     let runStageSate = false; // Zustand für die Animation
     let runStageSuccess = '';
-    let runStageStatus;
-    let testStageStatus;
-    let prepareStageStatus;
 
     // function to wakr up on-demand workspaces on Codesphere
     function activateWorkspace (workspaceId, teamDatacenterId){
@@ -221,7 +218,7 @@
                     }
                     break;
                 case 'activeWorkspaces':                    
-                    if (message.value === overviewData.workspace.id) {
+                    if (message.value[overviewData.workspace.id]) {
                         activeWorkspace = true;
                     }
                     break;
