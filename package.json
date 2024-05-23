@@ -83,7 +83,16 @@
       {
         "command": "codesphere.refresh",
         "title": "Refresh all webviews"
+      },
+      {
+        "command": "codesphere.openOverView",
+        "title": "Open Overview"
+      },
+      {
+        "command": "codesphere.bachToMenu",
+        "title": "Back to menu"
       }
+
     ]
   },
   "extensionPack": [
