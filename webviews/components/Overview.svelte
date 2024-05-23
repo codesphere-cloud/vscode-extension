@@ -217,7 +217,8 @@
                         });
                     }
                     break;
-                case 'activeWorkspaces':                    
+                case 'activeWorkspaces':
+                    console.log(message.value + 'tests123')                    
                     if (message.value[overviewData.workspace.id]) {
                         activeWorkspace = true;
                     }
