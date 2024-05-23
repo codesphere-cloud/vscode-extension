@@ -164,11 +164,12 @@
         startCiStage(workspaceId, stage, dataCenterId);
     }
 
-    function getCiStageStatus(workspaceId) {
+    function getCiStageStatus(workspaceId, dcId) {
         vscode.postMessage({
             type: 'getCiStageStatus',
             value: {
-                workspaceId: workspaceId
+                workspaceId: workspaceId,
+                datacenterId: dcId
             }
         });
     }
@@ -187,6 +188,7 @@
                     break;
                 case 'resourcesDeployed':
                     workspaceDeployed = true;
+                    getCiStageStatus(overviewData.workspace.id, overviewData.workspace.dataCenterId);
                     break;
                 case 'gitHubAuth':
                     // define code which will affect the DOM depending on the message
@@ -219,7 +221,7 @@
                     }
                     break;
                 case 'activeWorkspaces':                    
-                    if (message.value[overviewData.workspace.id]) {
+                    if (message.value === overviewData.workspace.id) {
                         activeWorkspace = true;
                     }
                     break;
@@ -266,7 +268,6 @@
     onMount(testAccessToken);
     onMount(getconnectedWorkspace);
     onMount(createWorkspaceURL);
-    // onMount(getCiStageStatus(overviewData.workspace.id))
 </script>
 
 <style>
