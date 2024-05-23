@@ -2,7 +2,7 @@
   "name": "codesphere",
   "displayName": "Codesphere",
   "description": "Connect VS Code to your Codesphere workspaces",
-  "version": "0.0.11",
+  "version": "0.1.0",
   "icon": "media/Codesphere.png",
   "repository": {
     "type": "git",
@@ -97,7 +97,6 @@
         "command": "codesphere.bachToMenu",
         "title": "Back to menu"
       }
-
     ]
   },
   "extensionPack": [
