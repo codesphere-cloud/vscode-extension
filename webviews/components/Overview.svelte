@@ -161,7 +161,7 @@
         startCiStage(workspaceId, stage, dataCenterId);
     }
 
-    function getCiStageStatus(workspaceId, stage) {
+    function getCiStageStatus(workspaceId) {
         vscode.postMessage({
             type: 'getCiStageStatus',
             value: {
@@ -250,6 +250,7 @@
     onMount(testAccessToken);
     onMount(getconnectedWorkspace);
     onMount(createWorkspaceURL);
+    // onMount(getCiStageStatus(overviewData.workspace.id))
 </script>
 
 <style>
