@@ -14,6 +14,7 @@ const { setupWs,
         getPidFromServer,
         waitForTerminal,
         waitForCiPipeline,
+        checkCiPipelineState,
         serverIsUp } = require('./ts/wsService');
 import { readBashFile } from "./ts/readBash";
 import * as wsLib from 'ws';
@@ -707,20 +708,71 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
         }
 
-        case "ciPipelineStatus": {
+        case "getCiStageStatus": {
           if (!data.value) {
             return;
           }
+          console.log('tests2');
+          const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
           const workspaceId = data.value.workspaceId;
-          const workspaceName = data.value.workspaceName;
           const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
-          const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
+          const accessToken = cache.get("codesphere.accessTokenCache");
+          console.log('tests3')
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
+          console.log('tests4')
+          let uaSocketconnect2 = getUaSocket();
 
-          let uaSocketconnect = getUaSocket();
+          let prepare;
+          let test;
+          let run;
 
-          await request(uaSocketconnect, "executionInfo", { workspaceId: workspaceId }, "workspace-proxy", 35);
+          console.log('tests', workspaceId);
 
+          const prepareCheck = checkCiPipelineState(uaSocketconnect2, 35);
+          const testCheck = checkCiPipelineState(uaSocketconnect2, 136);
+          const runCheck = checkCiPipelineState(uaSocketconnect2, 237);
+
+          testCheck.then((resultTest: any) => {
+            test = resultTest;
+            console.log('tests122', test);
+          }
+          );
+
+          runCheck.then((resultRun: any) => {
+            run = resultRun;
+            console.log('tests122', run);
+          });
+
+          prepareCheck.then((result: any) => {
+            prepare = result;
+            console.log('tests122', prepare);
+          });
+          
+          await delay(100);
+          console.log('tests5')
+          await request(uaSocketconnect2, "executionInfo", { workspaceId: workspaceId, stage: 'test' }, "workspace-proxy", 136);
+          
+          
+          await delay(200);
+          console.log('tests6')
+          await request(uaSocketconnect2, "executionInfo", { workspaceId: workspaceId, stage: 'run' }, "workspace-proxy", 237);
+          
+          await delay(100);
+
+          await request(uaSocketconnect2, "executionInfo", { workspaceId: workspaceId, stage: 'prepare' }, "workspace-proxy", 35);
+          
+          await delay(100);
+          console.log('tests7')
+          
+          this._view?.webview.postMessage({
+            type: "ciPipelineStatus",
+            value: {
+              prepare: prepare,
+              test: test,
+              run: run
+            },
+          });
+          
         }
       }
     }

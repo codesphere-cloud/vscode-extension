@@ -376,6 +376,36 @@ const waitForCiPipeline = async (deploymentSocket: any) => {
     });
 };
 
+const checkCiPipelineState = async (deploymentSocket: any, endpointId: number) => {
+    return new Promise((resolve, reject) => {
+        const messageHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+
+                if (msgTest.includes(`"endpointId":${endpointId}`)) {
+                    console.log(`tests14` + msgTest)
+                    deploymentSocket.off("message", messageHandler);
+                    deploymentSocket.off("error", errorHandler);
+                    resolve(parsedMsg.reply.state);
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
+
 
                 
 module.exports = {
@@ -392,6 +422,7 @@ module.exports = {
     getPidFromServer,
     waitForTerminal,
     waitForCiPipeline,
+    checkCiPipelineState,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
 };

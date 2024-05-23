@@ -24,36 +24,26 @@ export function activate(context: vscode.ExtensionContext) {
 		const fileTreeProvider = new FileTreeProvider(rootPath);
 		console.log('roothPath is: ', rootPath);
 
-		if (!rootPath) {
-			vscode.window.showInformationMessage('No workspace folder found1');
-			context.subscriptions.push(
-				vscode.window.registerWebviewViewProvider(
-				"codesphere-noworkspace",
-				noCurrentWorkspaceProvider
-				)
-			);
-		}
+		context.subscriptions.push(
+			vscode.window.registerWebviewViewProvider(
+			"codesphere-sidebar",
+			sidebarProvider
+			)
+		);
 
-		if (rootPath) {
-			if (!context.globalState.get("codesphere.currentWorkspace") || context.globalState.get("codesphere.currentWorkspace") === "") {
-				vscode.window.showInformationMessage('No workspace folder found');
-				context.subscriptions.push(
-					vscode.window.registerWebviewViewProvider(
-					"codesphere-noworkspace",
-					noCurrentWorkspaceProvider
+		context.subscriptions.push(
+			vscode.window.registerWebviewViewProvider(
+			"codesphere-noworkspace",
+			noCurrentWorkspaceProvider
+			)
+		);
+
+		context.subscriptions.push(
+			vscode.window.createTreeView(
+				'workspace-filetree', 
+				{ treeDataProvider: fileTreeProvider }
 				)
-			);
-			}
-			console.log('No workspace folder found2');
-			context.subscriptions.push(
-				vscode.window.createTreeView(
-					'workspace-filetree', 
-					{ treeDataProvider: fileTreeProvider }
-					)
-			);
-		} 
-			
-		
+		);		
 
 		const userData: any = context.globalState.get("codesphere.userData");
 		const gitEmail: string = userData.email || "";
@@ -70,7 +60,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const bashcommand = 'echo $WORKSPACE_ID';
 	const gitBashEmail = `git config --global user.email "${gitEmail}"`;
 	const gitBashName = `git config --global user.name "${gitFirstName} ${gitLastName}"`;
-	let workspaceId: string;
+	let workspaceId: string = "";
 
 	// prüfen ob man sich in einem remote tunnmel befindet. Wenn ja dann wird der ordner angepasst.
 	exec (bashcommand, (error, stdout, stderr) => {	
@@ -125,14 +115,19 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log(`stdout: ${stdout}`);
 	});
 
+	if (!rootPath) {
+		vscode.window.showInformationMessage('No workspace folder found1');
+		vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
+	}
 
-
-	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider(
-		"codesphere-sidebar",
-		sidebarProvider
-		)
-	);
+	if (rootPath) {
+		if (!context.globalState.get("codesphere.currentWorkspace") || context.globalState.get("codesphere.currentWorkspace") === "") {
+			vscode.window.showInformationMessage('No workspace folder found');
+			vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
+		}
+		console.log('No workspace folder found2');
+		vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
+	} 
 
 	if (!context.globalState.get("codesphere.isLoggedIn") || context.globalState.get("codesphere.isLoggedIn") === false) {
 		vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', false);
@@ -194,31 +189,15 @@ export function activate(context: vscode.ExtensionContext) {
 	  context.subscriptions.push(
 		vscode.commands.registerCommand('codesphere.backToMenu', async () => {
 			vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
-			context.subscriptions.push(
-				vscode.window.registerWebviewViewProvider(
-				"codesphere-noworkspace",
-				noCurrentWorkspaceProvider
-			));
 		})
 	  );
 
 	  context.subscriptions.push(
 		vscode.commands.registerCommand('codesphere.openOverView', async (workspaceID) => {
-			vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
-
 			if (context.globalState.get("codesphere.currentWorkspace") === workspaceID) {
-				context.subscriptions.push(
-					vscode.window.createTreeView(
-						'workspace-filetree', 
-						{ treeDataProvider: fileTreeProvider }
-						)
-				);
+				vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
 			} else {
-				context.subscriptions.push(
-					vscode.window.registerWebviewViewProvider(
-					"codesphere-noworkspace",
-					noCurrentWorkspaceProvider
-				));
+				vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
 			}
 		})
 	  );
