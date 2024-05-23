@@ -45,7 +45,12 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			console.log('No workspace folder found2');
 			const fileTreeProvider = new FileTreeProvider(rootPath);
-			vscode.window.createTreeView('workspace-filetree', { treeDataProvider: fileTreeProvider });
+			context.subscriptions.push(
+				vscode.window.createTreeView(
+					'workspace-filetree', 
+					{ treeDataProvider: fileTreeProvider }
+					)
+			);
 		} 
 			
 		
