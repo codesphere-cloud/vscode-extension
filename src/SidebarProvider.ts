@@ -665,7 +665,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           if (cache.get("codesphere.currentWorkspace") === selectedWorkspace) {
             vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', selectedWorkspace);
           }
-          vscode.commands.executeCommand('codesphere.opneOverView');
+          vscode.commands.executeCommand('codesphere.openOverView', `${selectedWorkspace}`);
           
           // Check if the workspace exists before using it
           if (selectedWorkspace) {            
@@ -705,6 +705,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
           vscode.commands.executeCommand('codesphere.backToMenu');
           break;
+        }
+
+        case "ciPipelineStatus": {
+          if (!data.value) {
+            return;
+          }
+          const workspaceId = data.value.workspaceId;
+          const workspaceName = data.value.workspaceName;
+          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
+          const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
+          socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
+
+          let uaSocketconnect = getUaSocket();
+
+          await request(uaSocketconnect, "executionInfo", { workspaceId: workspaceId }, "workspace-proxy", 35);
+
         }
       }
     }
