@@ -35,7 +35,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 		if (rootPath) {
 			if (!context.globalState.get("codesphere.currentWorkspace") || context.globalState.get("codesphere.currentWorkspace") === "") {
-				console.log('hihihihi');
 				vscode.window.showInformationMessage('No workspace folder found');
 				context.subscriptions.push(
 					vscode.window.registerWebviewViewProvider(
@@ -84,7 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
 		workspaceId = stdout ? stdout.trim() : ``;
 		context.globalState.update("codesphere.currentWorkspace", workspaceId);
 
-		vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
+		// vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
 
 
 		if (workspaceId !== "") {
