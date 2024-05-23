@@ -4,6 +4,10 @@
   "description": "Connect VS Code to your Codesphere workspaces",
   "version": "0.0.11",
   "icon": "media/Codesphere.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codesphere-cloud/vscode-extension-codesphere"
+  },
   "engines": {
     "vscode": "^1.87.0"
   },
