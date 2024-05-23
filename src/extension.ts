@@ -116,16 +116,13 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	if (!rootPath) {
-		vscode.window.showInformationMessage('No workspace folder found1');
 		vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
 	}
 
 	if (rootPath) {
 		if (!context.globalState.get("codesphere.currentWorkspace") || context.globalState.get("codesphere.currentWorkspace") === "") {
-			vscode.window.showInformationMessage('No workspace folder found');
 			vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
 		}
-		console.log('No workspace folder found2');
 		vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
 	} 
 
