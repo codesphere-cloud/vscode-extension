@@ -621,7 +621,7 @@
         <div class="codeProvider">
             <div class="codeProviderInside">
                 <div class="codeProviderInside">
-                    <p>and use this code</p>
+                    <p>please copy this code</p>
                     <p class="spaceForLink"></p>
                     <div class="codeAndIcon">
                         <p class="codeBox" id="codeBox">{code}</p>
@@ -632,7 +632,7 @@
                         </div>
                     </div>
                 </div>
-                <p class="spaceForLink">please use this link</p>
+                <p class="spaceForLink">and paste it here:</p>
                 <a href="https://github.com/login/device">https://github.com/login/device</a>
             </div>
         </div>
