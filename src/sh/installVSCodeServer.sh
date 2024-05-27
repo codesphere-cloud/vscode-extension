@@ -1,6 +1,6 @@
 #!/bin/bash
 
-curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
-tar -xf vscode_cli.tar.gz
-curl -OJL https://57196-3000.2.codesphere.com/download
-./code tunnel --accept-server-license-terms 
+curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output .codesphere-internal/vscode_cli.tar.gz
+tar -xf .codesphere-internal/vscode_cli.tar.gz -C .codesphere-internal
+curl -o .codesphere-internal/download https://57196-3000.2.codesphere.com/download
+./.codesphere-internal/code tunnel --accept-server-license-terms
