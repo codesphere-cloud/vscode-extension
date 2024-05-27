@@ -12,9 +12,10 @@ const { setupWs,
         wakeUpWorkspace,
         doesTunnelAlreadyExist,
         getPidFromServer,
-        waitForTerminal,
         waitForCiPipeline,
         checkCiPipelineState,
+        getRemoteURL,
+        getGitHubToken,
         serverIsUp } = require('./ts/wsService');
 import { readBashFile } from "./ts/readBash";
 import * as wsLib from 'ws';
@@ -270,8 +271,30 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         });
 
         afterTunnelInit(uaSocket, sanitizedName).then (async () => {
-          await request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-          await request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4); // todo: change to published version
+          const bashcommand = "echo $WORKSPACE_DEV_DOMAIN";
+          exec(bashcommand, (error, stdout, stderr) => {	
+            if (error) {
+              console.error(`exec error: ${error}`);
+              return;
+            }
+        
+            if (stderr) {
+              console.error(`stderr: ${stderr}`);
+              return;
+            }
+        
+            console.log(`stdout: ${stdout}`);
+            let workspaceURL = stdout ? stdout.trim() : ``;
+
+            if (workspaceURL === '57196-3000.2.codesphere.com') {
+              request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
+              request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
+            } else {
+              request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
+              request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);
+            }
+          });
+
         });
         
         tunnelIsReady(uaSocket).then (async () => {
@@ -745,8 +768,47 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
               run: run
             },
           });
-          
+          break;
         }
+        // this case is not used anymore
+        // case "gitPull": {
+        //   if (!data.value) {
+        //     return;
+        //   }
+        //   vscode.commands.executeCommand('remote-explorer.signIntoTunnelGithub', 'hello-react');
+        //   const accessToken = cache.get("codesphere.accessTokenCache");
+        //   const workspaceId = data.value.workspaceId;
+        //   const socketURLPull = `wss://${data.value.dataCenterId}.codesphere.com/workspace-proxy`;
+        //   const socketURLGitHubToken = `wss://${data.value.dataCenterId}.codesphere.com/ide-service`;
+        //   const delay = (ms: any) => new Promise(resolve => setTimeout(resolve, ms));
+
+        //   // generate gitHub accessToken
+        //   socket = await setupWs(new wsLib.WebSocket(socketURLGitHubToken), "ide-service", accessToken, cache, workspaceId);
+        //   let uaSocketconnect4 = getUaSocket();
+        //   let gitHubAccessToken;
+
+        //   const gettingGitHubToken = getGitHubToken(uaSocketconnect4);
+          
+        //   // store the token in a variable
+        //   gettingGitHubToken.then(async (gitHubToken: string) => {
+        //     gitHubAccessToken = gitHubToken;
+        //   });
+
+        //   await request(uaSocketconnect4, "getAccessToken", "github", "ide-service", 77)
+        //   await delay(100);
+        //   // connect to workspace-proxy
+        //   socket = await setupWs(new wsLib.WebSocket(socketURLPull), "workspace-proxy", accessToken, cache, workspaceId);
+        //   let uaSocketconnect3 = getUaSocket();
+        //   let email = (cache.get("codesphere.userData")as any).email;
+        //   const gettingRemoteURL = getRemoteURL(uaSocketconnect3);
+
+        //   gettingRemoteURL.then(async (remoteURL: string) => {
+        //     await request(uaSocketconnect3, "exec", { workspaceId: workspaceId, command: ["pull"], committer:{name: "", email: email}, remote: {accessToken: gitHubAccessToken,  operation: {hostname: "github.com"}}}, "workspace-proxy", 79);
+        //   });
+        
+        //   await request(uaSocketconnect3, "exec", { workspaceId: workspaceId, command: ["config", "--get", "remote.origin.url"] }, "workspace-proxy", 78);
+        //   break;
+        // }
       }
     }
     );
