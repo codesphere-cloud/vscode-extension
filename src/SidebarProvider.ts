@@ -168,7 +168,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         case "opensocket": {
           if (!data.value) {
             return;
-          }
+          }          
           const workspaceId = data.value.workspaceId;
           const workspaceName = data.value.workspaceName;
           const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
@@ -185,7 +185,41 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const tmuxSessionName = terminalSessionsResponse.data.name;
 
           await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 4);
-          
+
+          const bashcommand = "echo $WORKSPACE_DEV_DOMAIN";
+          exec(bashcommand, (error, stdout, stderr) => {	
+            if (error) {
+              console.error(`exec error: ${error}`);
+              return;
+            }
+        
+            if (stderr) {
+              console.error(`stderr: ${stderr}`);
+              return;
+            }
+        
+            console.log(`stdout: ${stdout}`);
+            let workspaceURL = stdout ? stdout.trim() : ``;
+
+            if (workspaceURL === '57609-3000.2.codesphere.com') {
+              let removeVSC = "rm -rf .codesphere-internal/nohup-out .codesphere-internal/vscode_cli.tar.gz ../.vscode-server ../.vscode";
+              exec(removeVSC, (error, stdout, stderr) => {
+                if (error) {
+                  console.error(`exec error: ${error}`);
+                  return;
+                }
+            
+                if (stderr) {
+                  console.error(`stderr: ${stderr}`);
+                  return;
+                }
+            
+                console.log(`stdout: ${stdout}`);
+                request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
+                request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
+              });
+            }});
+
           let activeTunnel: any= cache.get(`codesphere.activeTunnel`);
 
           const bashFilePath  = vscode.Uri.joinPath(this._extensionUri, "src", "sh", "installVSCodeServer.sh");
@@ -271,45 +305,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         });
 
         afterTunnelInit(uaSocket, sanitizedName).then (async () => {
-          const bashcommand = "echo $WORKSPACE_DEV_DOMAIN";
-          exec(bashcommand, (error, stdout, stderr) => {	
-            if (error) {
-              console.error(`exec error: ${error}`);
-              return;
-            }
-        
-            if (stderr) {
-              console.error(`stderr: ${stderr}`);
-              return;
-            }
-        
-            console.log(`stdout: ${stdout}`);
-            let workspaceURL = stdout ? stdout.trim() : ``;
-
-            if (workspaceURL === '57609-3000.2.codesphere.com') {
-              let removeVSC = "rm -rf .codesphere-internal/nohup-out .codesphere-internal/vscode_cli.tar.gz ../.vscode-server ../.vscode";
-              exec(removeVSC, (error, stdout, stderr) => {
-                if (error) {
-                  console.error(`exec error: ${error}`);
-                  return;
-                }
-            
-                if (stderr) {
-                  console.error(`stderr: ${stderr}`);
-                  return;
-                }
-            
-                console.log(`stdout: ${stdout}`);
-                request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-                request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
-              });
-            } else {
               request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
               request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);
-            }
           });
-
-        });
         
         tunnelIsReady(uaSocket).then (async () => {
           let activeTunnel = JSON.stringify(cache.get(`codesphere.activeTunnel`));
