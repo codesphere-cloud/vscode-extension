@@ -203,7 +203,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             const tmuxSessionNameBgProcess = terminalSessionsBgProcess.data.name;
             
             await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess }, "workspace-proxy", 7);
-            await request(uaSocket, "terminalStream", { method: "data", data: "nohup ./code tunnel\r" }, "workspace-proxy", 7);
+            await request(uaSocket, "terminalStream", { method: "data", data: "nohup ./.codesphere-internal/code tunnel > .codesphere-internal/nohup.out 2>&1 &\r" }, "workspace-proxy", 7);
             await request(uaSocket, "terminalStream", { method: "data", data: "^Z\r" }, "workspace-proxy", 7);
             await request(uaSocket, "terminalStream", { method: "data", data: "bg\r" }, "workspace-proxy", 7);
             await request(uaSocket, "terminalStream", { method: "data", data: "disown\r" }, "workspace-proxy", 7);
@@ -271,7 +271,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
         afterTunnelInit(uaSocket, sanitizedName).then (async () => {
           await request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-          await request(uaSocket, "terminalStream", { method: "data", data: "./code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4); // todo: change to published version
+          await request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4); // todo: change to published version
         });
         
         tunnelIsReady(uaSocket).then (async () => {
@@ -302,7 +302,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const tmuxSessionNameBgProcess = terminalSessionsBgProcess.data.name;
           
           await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess }, "workspace-proxy", 7);
-          await request(uaSocket, "terminalStream", { method: "data", data: "nohup ./code tunnel\r" }, "workspace-proxy", 7);
+          await request(uaSocket, "terminalStream", { method: "data", data: "nohup ./.codesphere-internal/code tunnel > .codesphere-internal/nohup.out 2>&1 &\r" }, "workspace-proxy", 7);
           await request(uaSocket, "terminalStream", { method: "data", data: "^Z\r" }, "workspace-proxy", 7);
           await request(uaSocket, "terminalStream", { method: "data", data: "bg\r" }, "workspace-proxy", 7);
           await request(uaSocket, "terminalStream", { method: "data", data: "disown\r" }, "workspace-proxy", 7);
@@ -414,7 +414,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             // wait 500 ms
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            request(uaSocketconnect, "terminalStream", { method: "data", data: "nohup ./code tunnel" }, "workspace-proxy", 7);
+            request(uaSocketconnect, "terminalStream", { method: "data", data: "nohup ./.codesphere-internal/code tunnel > .codesphere-internal/nohup.out 2>&1 &" }, "workspace-proxy", 7);
 
             // wait 500 ms
             await new Promise(resolve => setTimeout(resolve, 500));
