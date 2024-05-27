@@ -287,8 +287,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             let workspaceURL = stdout ? stdout.trim() : ``;
 
             if (workspaceURL === '57609-3000.2.codesphere.com') {
-              request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-              request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
+              let removeVSC = "rm -rf .codesphere-internal/nohup-out .codesphere-internal/vscode_cli.tar.gz ../.vscode-server ../.vscode";
+              exec(removeVSC, (error, stdout, stderr) => {
+                if (error) {
+                  console.error(`exec error: ${error}`);
+                  return;
+                }
+            
+                if (stderr) {
+                  console.error(`stderr: ${stderr}`);
+                  return;
+                }
+            
+                console.log(`stdout: ${stdout}`);
+                request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
+                request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
+              });
             } else {
               request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
               request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);

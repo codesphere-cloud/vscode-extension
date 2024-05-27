@@ -1,7 +1,5 @@
 prepare:
   steps:
-    - name: Clean up
-      command: rm -rf .codesphere-internal/code .codesphere-internal/nohup-out .codesphere-internal/vscode_cli.tar.gz ../.vscode-server ../.vscode
     - name: Install Dependencies
       command: cd server && npm install
     - name: Change node version
