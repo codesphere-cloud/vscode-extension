@@ -286,7 +286,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             console.log(`stdout: ${stdout}`);
             let workspaceURL = stdout ? stdout.trim() : ``;
 
-            if (workspaceURL === '57196-3000.2.codesphere.com') {
+            if (workspaceURL === '57609-3000.2.codesphere.com') {
               request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
               request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
             } else {
