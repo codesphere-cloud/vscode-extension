@@ -12,7 +12,6 @@
     let workspaceAboutToConnect = false;
     let code;
     let connectedWorkspace = false;
-    let activeWorkspaces;
     let workspaceURL;
     let prepareStageSate = false; // Zustand für die Animation
     let prepareStageSuccess = ''; // Zustand ob stage erfolgreich war oder einen Fehler hatte
@@ -20,6 +19,8 @@
     let testStageSuccess = '';
     let runStageSate = false; // Zustand für die Animation
     let runStageSuccess = '';
+    let pullState = false;
+    let pushState = false;
 
     // function to wakr up on-demand workspaces on Codesphere
     function activateWorkspace (workspaceId, teamDatacenterId){
@@ -171,6 +172,27 @@
         });
     }
 
+    function gitPull(workspaceId, dscId) {
+        console.log('gitPull')
+        vscode.postMessage({
+            type: 'gitPull',
+            value: {
+                workspaceId: workspaceId,
+                dataCenterId: dscId
+            }
+        });
+    }
+
+    function gitPush(workspaceId, dcId) {
+        vscode.postMessage({
+            type: 'gitPush',
+            value: {
+                workspaceId: workspaceId,
+                dataCenterId: dcId
+            }
+        });
+    }
+
     onMount(() => {
         
         window.addEventListener('message', event => {
@@ -256,6 +278,13 @@
                     if (runStageSuccess === 'running') {
                         runStageSate = true;
                     }
+                    break;
+                case 'gitPull':
+                    pullState = false;
+                    break;
+                case 'gitPush':
+                    pushState = false;
+                    break;
             }   
         });
     });
@@ -646,4 +675,48 @@
             </div>
         </div>
     {/if}
+
+    <!-- <button on:click = {() => {pullState = true; gitPush(overviewData.workspace.id)}}>
+        {#if pullState === false}
+            push
+        {/if}
+
+        {#if pullState === true}
+            <div class="animation-container">
+                <div class="circle-container">
+                    <div class="inner-circle" class:animate={animateCircles}></div>
+                    <div class="outer-circle" class:animate={animateCircles}></div>
+                </div>
+            </div>
+            {#if animateCircles} 
+                <script>
+                    startAnimation(); 
+                </script>
+            {/if}
+        {/if}
+    </button>
+
+    <button on:click = {() => {
+        pushState = true; 
+        gitPull(overviewData.workspace.id, overviewData.workspace.dataCenterId)
+        }}>
+
+        {#if pushState === false}
+            pull
+        {/if}
+        
+        {#if pushState === true}
+            <div class="animation-container">
+                <div class="circle-container">
+                    <div class="inner-circle" class:animate={animateCircles}></div>
+                    <div class="outer-circle" class:animate={animateCircles}></div>
+                </div>
+            </div>
+            {#if animateCircles} 
+                <script>
+                    startAnimation(); 
+                </script>
+            {/if}
+        {/if}
+    </button> -->
 </div>

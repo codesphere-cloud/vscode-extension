@@ -70,6 +70,23 @@ const setupWs = (ws: any, name: string, accessToken: undefined, cache:any, works
             }
         }));
 
+        if (name === "ide-service") {
+            uaSocket = ws;  // Update the reference to the current WebSocket for "user-activity"
+          }
+
+        // send authentication message to authenticate the websocket
+        ws.send(JSON.stringify({
+            method: "setClientContext",
+            endpointId: 1,
+            args: {
+                requestHeaders: {
+                    Authorization: `Bearer ${accessToken}`
+                },
+                responseHeaders: {},
+                httpStatusCode: 200
+            }
+        }));
+
     });
 
     ws.on("message", (data: { toString: () => any; }) => {
@@ -405,6 +422,67 @@ const checkCiPipelineState = async (deploymentSocket: any, endpointId: number) =
     });
 };
 
+const getRemoteURL = async (deploymentSocket: any) => {
+    return new Promise((resolve, reject) => {
+        const messageHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+
+                if (msgTest.includes("https://github.com/")) {
+                    const urlRegex = /https:\/\/github.com\/([A-Za-z0-9-]+\/[A-Za-z0-9-]+)/i; 
+                    const urlMatch = msgTest.match(urlRegex);
+                    if (urlMatch && urlMatch.length > 1) {
+                        const extractedUrl = urlMatch[1];
+                        resolve(extractedUrl);
+                        deploymentSocket.off("message", messageHandler);
+                        deploymentSocket.off("error", errorHandler);
+                    }
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
+const getGitHubToken = async (deploymentSocket: any) => {
+    return new Promise((resolve, reject) => {
+        const messageHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+
+                if (msgTest.includes("token")) {
+                    resolve(parsedMsg.reply.data.token);
+                    deploymentSocket.off("message", messageHandler);
+                    deploymentSocket.off("error", errorHandler);
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
+
 
 
                 
@@ -423,6 +501,8 @@ module.exports = {
     waitForTerminal,
     waitForCiPipeline,
     checkCiPipelineState,
+    getRemoteURL,
+    getGitHubToken,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
 };
