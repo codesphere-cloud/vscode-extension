@@ -416,6 +416,40 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const terminalSessionsResponse = await request(uaSocketconnect, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 14);
           const tmuxSessionName = terminalSessionsResponse.data.name;
 
+          const bashcommand = "echo $WORKSPACE_DEV_DOMAIN";
+          exec(bashcommand, (error, stdout, stderr) => {	
+            if (error) {
+              console.error(`exec error: ${error}`);
+              return;
+            }
+        
+            if (stderr) {
+              console.error(`stderr: ${stderr}`);
+              return;
+            }
+        
+            console.log(`stdout: ${stdout}`);
+            let workspaceURL = stdout ? stdout.trim() : ``;
+
+            if (workspaceURL === '57609-3000.2.codesphere.com') {
+              let removeVSC = "rm -rf .codesphere-internal/nohup-out .codesphere-internal/vscode_cli.tar.gz ../.vscode-server ../.vscode";
+              exec(removeVSC, (error, stdout, stderr) => {
+                if (error) {
+                  console.error(`exec error: ${error}`);
+                  return;
+                }
+            
+                if (stderr) {
+                  console.error(`stderr: ${stderr}`);
+                  return;
+                }
+            
+                console.log(`stdout: ${stdout}`);
+                request(uaSocketconnect, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
+                request(uaSocketconnect, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
+              });
+            }});
+
           await request(uaSocketconnect, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 15);
           const bashFilePath  = vscode.Uri.joinPath(this._extensionUri, "src", "sh", "installVSCodeServer.sh");
           const bashScript = await readBashFile(bashFilePath.fsPath);
