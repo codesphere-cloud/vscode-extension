@@ -186,6 +186,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
           await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 4);
 
+          // to do get dev url from workspace
           const bashcommand = "echo $WORKSPACE_DEV_DOMAIN";
           exec(bashcommand, (error, stdout, stderr) => {	
             if (error) {
