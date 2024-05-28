@@ -33,4 +33,7 @@ jobs:
             email: ${{ secrets.CODESPHERE_EMAIL }}
             password: ${{ secrets.CODESPHERE_PASSWORD }}
             team: 'Marketing'
-            plan: 'Micro'            
+            plan: 'Micro'  
+            onDemand: true
+            env: |
+              USE_VSIX=true
