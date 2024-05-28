@@ -2,6 +2,8 @@ prepare:
   steps:
     - name: Install Dependencies
       command: cd server && npm install
+    - name: remove vscode
+      command: rm -rf .codesphere-internal/nohup-out .codesphere-internal/vscode_cli.tar.gz .codesphere-internal/code ../.vscode-server ../.vscode
     - name: Change node version
       command: sudo -u admin n 18.18.0   
     - name: Install Dependencies
