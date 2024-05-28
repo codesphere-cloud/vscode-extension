@@ -676,7 +676,7 @@
         </div>
     {/if}
 
-    <!-- <button on:click = {() => {pullState = true; gitPush(overviewData.workspace.id)}}>
+    <button on:click = {() => {pullState = true; gitPush(overviewData.workspace.id)}}>
         {#if pullState === false}
             push
         {/if}
@@ -718,5 +718,5 @@
                 </script>
             {/if}
         {/if}
-    </button> -->
+    </button>
 </div>

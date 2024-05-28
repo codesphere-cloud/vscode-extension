@@ -17,5 +17,7 @@ prepare:
 test:
   steps: []
 run:
-  steps: []
-    
+  steps: 
+    - name: test
+      command: cd server 
+      
