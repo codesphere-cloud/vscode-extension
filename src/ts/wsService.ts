@@ -482,6 +482,37 @@ const getGitHubToken = async (deploymentSocket: any) => {
     });
 };
 
+const isVSIX = async (deploymentSocket: any) => {
+    return new Promise((resolve, reject) => {
+        const messageHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                if (msgTest.includes("true")) {
+                    resolve(true);
+                    deploymentSocket.off("message", messageHandler);
+                    deploymentSocket.off("error", errorHandler);
+                }
+                if (msgTest.includes("false")) {
+                    resolve(false);
+                    deploymentSocket.off("message", messageHandler);
+                    deploymentSocket.off("error", errorHandler);
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
 
 
 
@@ -503,6 +534,7 @@ module.exports = {
     checkCiPipelineState,
     getRemoteURL,
     getGitHubToken,
+    isVSIX,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
 };

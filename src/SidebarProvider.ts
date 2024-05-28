@@ -16,6 +16,7 @@ const { setupWs,
         checkCiPipelineState,
         getRemoteURL,
         getGitHubToken,
+        isVSIX,
         serverIsUp } = require('./ts/wsService');
 import { readBashFile } from "./ts/readBash";
 import * as wsLib from 'ws';
@@ -269,31 +270,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         });
 
         afterTunnelInit(uaSocket, sanitizedName).then (async () => {
-          const bashcommand = "echo $USE_VSIX";
-          exec(bashcommand, (error, stdout, stderr) => {	
-            if (error) {
-              console.error(`exec error: ${error}`);
-              return;
-            }
-        
-            if (stderr) {
-              console.error(`stderr: ${stderr}`);
-              return;
-            }
-        
-            console.log(`stdout: ${stdout}`);
-            let workspaceDev = stdout ? stdout.trim() : ``;
+          const isVSIXWorkspace = isVSIX(uaSocket);
+          let workspaceDev;
 
-            if (!workspaceDev) {
-                request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-                request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);
-            } else {
-                request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-                request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
-            }
-          
-          
+          isVSIXWorkspace.then((vsixState: boolean) => {
+            workspaceDev = vsixState;
           });
+
+          await request(uaSocket, "terminalStream", { method: "data", data: "echo $USE_VSIX\r"}, "workspace-proxy", 4);
+
+          if (!workspaceDev) {
+              request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
+              request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);
+          } else {
+              request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
+              request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
+          }
           });
         
         tunnelIsReady(uaSocket).then (async () => {
