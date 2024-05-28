@@ -17,6 +17,5 @@ prepare:
 test:
   steps: []
 run:
-  steps:
-    - name: Start Dev Server
-      command: cd server && npm start
+  steps: []
+    
