@@ -676,47 +676,5 @@
         </div>
     {/if}
 
-    <!-- <button on:click = {() => {pullState = true; gitPush(overviewData.workspace.id)}}>
-        {#if pullState === false}
-            push
-        {/if}
-
-        {#if pullState === true}
-            <div class="animation-container">
-                <div class="circle-container">
-                    <div class="inner-circle" class:animate={animateCircles}></div>
-                    <div class="outer-circle" class:animate={animateCircles}></div>
-                </div>
-            </div>
-            {#if animateCircles} 
-                <script>
-                    startAnimation(); 
-                </script>
-            {/if}
-        {/if}
-    </button>
-
-    <button on:click = {() => {
-        pushState = true; 
-        gitPull(overviewData.workspace.id, overviewData.workspace.dataCenterId)
-        }}>
-
-        {#if pushState === false}
-            pull
-        {/if}
-        
-        {#if pushState === true}
-            <div class="animation-container">
-                <div class="circle-container">
-                    <div class="inner-circle" class:animate={animateCircles}></div>
-                    <div class="outer-circle" class:animate={animateCircles}></div>
-                </div>
-            </div>
-            {#if animateCircles} 
-                <script>
-                    startAnimation(); 
-                </script>
-            {/if}
-        {/if}
-    </button> -->
+    
 </div>
