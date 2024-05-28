@@ -13,7 +13,7 @@ prepare:
     - name: bundle project
       command: npm run vscode:prepublish
     - name: Package extension
-      command: ./node_modules/@vscode/vsce/vsce pack mv *.vsix .codesphere-internal/  
+      command: ./node_modules/@vscode/vsce/vsce pack && mv *.vsix .codesphere-internal/  
 test:
   steps: []
 run:
