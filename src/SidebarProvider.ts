@@ -186,41 +186,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
           await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 4);
 
-          // to do get dev url from workspace
-          // const bashcommand = "echo $USE_VSIX";
-          // exec(bashcommand, (error, stdout, stderr) => {	
-          //   if (error) {
-          //     console.error(`exec error: ${error}`);
-          //     return;
-          //   }
-        
-          //   if (stderr) {
-          //     console.error(`stderr: ${stderr}`);
-          //     return;
-          //   }
-        
-          //   console.log(`stdout: ${stdout}`);
-          //   let workspaceURL = stdout ? stdout.trim() : ``;
-
-          //   if (workspaceURL === 'true') {
-          //     let removeVSC = "rm -rf .codesphere-internal/nohup-out .codesphere-internal/vscode_cli.tar.gz ../.vscode-server ../.vscode";
-          //     exec(removeVSC, (error, stdout, stderr) => {
-          //       if (error) {
-          //         console.error(`exec error: ${error}`);
-          //         return;
-          //       }
-            
-          //       if (stderr) {
-          //         console.error(`stderr: ${stderr}`);
-          //         return;
-          //       }
-            
-          //       console.log(`stdout: ${stdout}`);
-          //       request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-          //       request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
-          //     });
-          //   }});
-
           const bashFilePath  = vscode.Uri.joinPath(this._extensionUri, "src", "sh", "installVSCodeServer.sh");
           const bashScript = await readBashFile(bashFilePath.fsPath);
           await request(uaSocket, "terminalStream", { method: "data", data: bashScript }, "workspace-proxy", 4);
@@ -304,8 +269,31 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         });
 
         afterTunnelInit(uaSocket, sanitizedName).then (async () => {
-              request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-              request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);
+          const bashcommand = "echo $USE_VSIX";
+          exec(bashcommand, (error, stdout, stderr) => {	
+            if (error) {
+              console.error(`exec error: ${error}`);
+              return;
+            }
+        
+            if (stderr) {
+              console.error(`stderr: ${stderr}`);
+              return;
+            }
+        
+            console.log(`stdout: ${stdout}`);
+            let workspaceDev = stdout ? stdout.trim() : ``;
+
+            if (!workspaceDev) {
+                request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
+                request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);
+            } else {
+                request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
+                request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
+            }
+          
+          
+          });
           });
         
         tunnelIsReady(uaSocket).then (async () => {
@@ -414,41 +402,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           // Warte auf die Antwort des vorherigen Requests und extrahiere den tmuxSessionName
           const terminalSessionsResponse = await request(uaSocketconnect, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 14);
           const tmuxSessionName = terminalSessionsResponse.data.name;
-
-          // const bashcommand = "echo $USE_VSIX";
-          // exec(bashcommand, (error, stdout, stderr) => {	
-          //   if (error) {
-          //     console.error(`exec error: ${error}`);
-          //     return;
-          //   }
-        
-          //   if (stderr) {
-          //     console.error(`stderr: ${stderr}`);
-          //     return;
-          //   }
-        
-          //   console.log(`stdout: ${stdout}`);
-          //   let workspaceURL = stdout ? stdout.trim() : ``;
-
-          //   if (workspaceURL === 'true') {
-          //     vscode.window.showInformationMessage('this is ');
-          //     let removeVSC = "rm -rf .codesphere-internal/nohup-out .codesphere-internal/vscode_cli.tar.gz ../.vscode-server ../.vscode";
-          //     exec(removeVSC, (error, stdout, stderr) => {
-          //       if (error) {
-          //         console.error(`exec error: ${error}`);
-          //         return;
-          //       }
-            
-          //       if (stderr) {
-          //         console.error(`stderr: ${stderr}`);
-          //         return;
-          //       }
-            
-          //       console.log(`stdout: ${stdout}`);
-          //       request(uaSocketconnect, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-          //       request(uaSocketconnect, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension " + vsixFile + "\r"}, "workspace-proxy", 4);
-          //     });
-          //   }});
 
           await request(uaSocketconnect, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 15);
           const bashFilePath  = vscode.Uri.joinPath(this._extensionUri, "src", "sh", "installVSCodeServer.sh");
