@@ -556,7 +556,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                   }
       
                   if (stderr) {
-                      console.error(`stderr: ${stderr}`);
+                      console.error(`stderrr: ${stderr}`);
                       return;
                   }
       
