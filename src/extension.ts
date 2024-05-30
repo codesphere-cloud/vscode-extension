@@ -165,6 +165,11 @@ export function activate(context: vscode.ExtensionContext) {
 					context.secrets.delete('codesphere.accessToken');
 					context.secrets.delete('codesphere.sessionId');
 					context.globalState.update("codesphere.isLoggedIn", false);	
+					context.globalState.update("codesphere.accessTokenCache", "");
+					context.globalState.update("codesphere.teams", []);
+					context.globalState.update("codesphere.workspaces", {});
+					context.globalState.update("codesphere.userData", {});
+
 					sidebarProvider.updateWebviewContent();				
 					vscode.window.showInformationMessage("Sucessfully logged out.");
 					// After the user has successfully logged out

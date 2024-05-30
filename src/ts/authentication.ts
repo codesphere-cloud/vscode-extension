@@ -2,38 +2,34 @@ import axios from "axios";
 import * as vscode from "vscode";
 
 // Funktion zum Anmelden
-export function signIn(email: string, password: string, callback: (error: any, sessionId?: string) => void) {
+export function signIn(email: string, password: string): Promise<string> {
     const signInUrl = 'https://codesphere.com/auth-service/signIn';
-  
+
     const requestData = {
         email: email,
         password: password
     };
-  
+
     console.log('Signing in...');
-  
-    axios.post(signInUrl, requestData)
+
+    return axios.post(signInUrl, requestData)
         .then(response => {
             const { data, status } = response;
             if (status === 200) {
                 console.log('body', data);
                 if (data.code === "Error") {
-                    callback(new Error(data.errMessage)); // Fehler an die Callback-Funktion übergeben
-                    return;
+                    throw new Error(data.errMessage); // Fehler werfen
                 }
-                const sessionId = data.data.sessionId;
-                callback(null, sessionId); // sessionId an die Callback-Funktion übergeben
+                return data.data.sessionId; // sessionId zurückgeben
             } else {
                 console.log('error3', response);
-                callback(new Error(response.statusText)); // Fehler an die Callback-Funktion übergeben
+                throw new Error(response.statusText); // Fehler werfen
             }
         })
         .catch(error => {
             console.log('error1', error);
-            callback(error); // Fehler an die Callback-Funktion übergeben
+            throw error; // Fehler weiterwerfen
         });
-  
-    console.log('signed in');
 }
 
 // Funktion zum Generieren des Access Tokens
