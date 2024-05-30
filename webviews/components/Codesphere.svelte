@@ -75,7 +75,7 @@
     onMount(getUserData);
     onMount(getWorkspaces);
     onMount(getActiveWorkspaces);
-    onMount(testAccessToken);
+    // onMount(testAccessToken);
     onMount(getCurrentWorkspace);
 
     onMount(() => {
@@ -86,10 +86,11 @@
             switch (message.type) {
                 case 'listTeams':
                     teamArray = JSON.parse(message.value);
+                    teamArray = [...teamArray];
+                    console.log('supsup' + teamArray);
                     break;
                 case 'getWorkspaces':
                     workspaceArray = JSON.parse(message.value);
-                    
                     break;
                 case 'getUserData':
                     user = JSON.parse(message.value);

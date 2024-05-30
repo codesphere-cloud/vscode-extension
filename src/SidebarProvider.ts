@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { getNonce } from "./ts/getNonce";
 import { signIn, genAccessToken } from "./ts/authentication";
 import { listTeams, listWorkspaces, getUserData } from "./ts/userDataRequests";
+import { reloadCache } from "./ts/reloadCache";
 const { setupWs, 
         request, 
         waitForWorkspaceRunning, 
@@ -482,113 +483,97 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         }
         case "signin": {
           if (!data.value) {
-            return;
-          }
-        
-          signIn(data.value.email, data.value.password, async (error, sessionId) => {
-            if (error) {
-              this._view?.webview.postMessage({ type: "onError", value: error });
-              this._view?.webview.postMessage({ type: "onError", value: `${error.message}` });
               return;
-            }
-            
-            this.extensionContext.secrets.store("codesphere.sessionId", sessionId as string);
-            
-            const storedSessionId: string | undefined = await this.extensionContext.secrets.get("codesphere.sessionId");
-            genAccessToken(storedSessionId as string, async (error: Error | null, accessToken?: string) => {
-              if (error) {
-                  vscode.window.showErrorMessage('An error occurred while generating access token: ' + error.message);
-                return;
-                }
-
-              if (!accessToken) {
-                  vscode.window.showErrorMessage('Access token is undefined.');
-                  return;
-               }
-
-              this.extensionContext.secrets.store("codesphere.accessToken", accessToken);
-             cache.update("codesphere.accessTokenCache", accessToken);
-              
-             webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
-              vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
-              cache.update("codesphere.isLoggedIn", true);
-            });
-          });
-
-          const accessToken = await cache.get("codesphere.accessTokenCache");
-          try {
-            const teams = await listTeams(accessToken as string);
-            cache.update("codesphere.teams", teams);
-        
-            let teamArray = cache.get("codesphere.teams");
-            this._view?.webview.postMessage({ type: "listTeams", value: `${JSON.stringify(teamArray)}` });
-          } catch (error) {
-            console.log('error', error);
-          }
-
-          try {
-            const teams: Array<any> = cache.get("codesphere.teams") as Array<any>;
-            const workspaces = await listWorkspaces(accessToken as string, teams);
-            cache.update("codesphere.workspaces", workspaces);
-            const message = cache.get("codesphere.workspaces");
-          } catch (error) {
-            console.log('error', error);
           }
       
           try {
-              const userData = await getUserData(accessToken as string);
-              cache.update("codesphere.userData", userData);
-              let user = cache.get("codesphere.userData");
-              this._view?.webview.postMessage({ type: "getUserData", value: `${JSON.stringify(user)}` });
-          } catch (error) {
-              console.log(error);
-          }
-
-          const userGitData: any = cache.get("codesphere.userData");
+              const sessionId = await signIn(data.value.email, data.value.password);
+      
+              await this.extensionContext.secrets.store("codesphere.sessionId", sessionId as string);
+      
+              const storedSessionId = await this.extensionContext.secrets.get("codesphere.sessionId");
+      
+              const accessToken = await new Promise<string>((resolve, reject) => {
+                  genAccessToken(storedSessionId as string, (error: Error | null, accessToken?: string) => {
+                      if (error) {
+                          return reject(error);
+                      }
+                      if (!accessToken) {
+                          return reject(new Error('Access token is undefined.'));
+                      }
+                      resolve(accessToken);
+                  });
+              });
+      
+              await this.extensionContext.secrets.store("codesphere.accessToken", accessToken);
+              cache.update("codesphere.accessTokenCache", accessToken);
+      
+              console.log('accessTokentesti', accessToken);
+      
+              await reloadCache(accessToken, (error, teams, workspaces, userData) => {
+                if (error) {
+                  vscode.window.showErrorMessage('An error occurred while reloading cache: ' + error.message);
+                  return;
+                }
+                cache.update("codesphere.workspaces", workspaces);
+                cache.update("codesphere.userData", userData);
+                cache.update("codesphere.teams", teams);
+              });
+      
+              const userGitData: any = cache.get("codesphere.userData");
               const gitEmail: string = userGitData.email || "";
               let gitFirstName: string = userGitData.firstName || "";
               let gitLastName: string = userGitData.lastName || "";
-
+      
               if (!gitFirstName && !gitLastName && gitEmail) {
-                const emailParts = gitEmail.split("@");
-                if (emailParts.length > 0) {
-                  gitFirstName = emailParts[0];
-                }
+                  const emailParts = gitEmail.split("@");
+                  if (emailParts.length > 0) {
+                      gitFirstName = emailParts[0];
+                  }
               }
-
+      
               const gitBashEmail = `git config --global user.email "${gitEmail}"`;
               const gitBashName = `git config --global user.name "${gitFirstName} ${gitLastName}"`;
-
-              exec (gitBashEmail, (error, stdout, stderr) => {
-                if (error) {
-                  console.error(`exec error: ${error}`);
-                  return;
-                }
-
-                if (stderr) {
-                  console.error(`stderr: ${stderr}`);
-                  return;
-                }
-
-                console.log(`stdout: ${stdout}`);
+      
+              exec(gitBashEmail, (error, stdout, stderr) => {
+                  if (error) {
+                      console.error(`exec error: ${error}`);
+                      return;
+                  }
+      
+                  if (stderr) {
+                      console.error(`stderr: ${stderr}`);
+                      return;
+                  }
+      
+                  console.log(`stdout: ${stdout}`);
               });
-
-              exec (gitBashName, (error, stdout, stderr) => {
-                if (error) {
-                  console.error(`exec error: ${error}`);
-                  return;
-                }
-
-                if (stderr) {
-                  console.error(`stderr: ${stderr}`);
-                  return;
-                }
-
-                console.log(`stdout: ${stdout}`);
+      
+              exec(gitBashName, (error, stdout, stderr) => {
+                  if (error) {
+                      console.error(`exec error: ${error}`);
+                      return;
+                  }
+      
+                  if (stderr) {
+                      console.error(`stderr: ${stderr}`);
+                      return;
+                  }
+      
+                  console.log(`stdout: ${stdout}`);
               });
-
+      
+              webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
+              vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
+              cache.update("codesphere.isLoggedIn", true);
+      
+          } catch (error: any) {
+              console.log('error found', error);
+              this._view?.webview.postMessage({ type: "onError", value: error });
+              this._view?.webview.postMessage({ type: "onError", value: `${error.message}` });
+          }
           break;
-        }
+      }
         
         case "listTeams": {
           if (!data.value) {
@@ -598,18 +583,20 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           this._view?.webview.postMessage({ type: "listTeams", value: `${JSON.stringify(teamArray)}` });
           break;
         }
-        case "logout": {
-          if (!data.value) {
-            return;
-          }
-          this.extensionContext.secrets.delete("codesphere.sessionId");
-          this.extensionContext.secrets.delete("codesphere.accessToken");
+        // case "logout": {
+        //   if (!data.value) {
+        //     return;
+        //   }
+        //   this.extensionContext.secrets.delete("codesphere.sessionId");
+        //   this.extensionContext.secrets.delete("codesphere.accessToken");
 
-          vscode.window.showInformationMessage("Successfully logged out");
-          cache.update("codesphere.isLoggedIn", false);
-          webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-          break;
-        }
+        //   vscode.window.showInformationMessage("Successfully logged out");
+        //   cache.update("codesphere.isLoggedIn", false);
+        //   cache.update("codesphere.accessTokenCache", "");
+        //   console.log(`Logged out ${cache.get("codesphere.accessTokenCache")}`);
+        //   webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        //   break;
+        // }
         case "getWorkspaces": {
           if (!data.value) {
             return;

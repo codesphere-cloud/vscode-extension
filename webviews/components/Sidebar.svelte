@@ -279,7 +279,7 @@
         Sign in
     </button>
     <div class="link-container">
-        <a class="reset-password" href="codesphere.com">Forgot your password?</a>
+        <a class="reset-password" href="https://codesphere.com/ide/signin">Forgot your password?</a>
     </div>
     <p id="Errormessage" class="Errormessage" >{errorMessage}</p>
 </div>

@@ -313,7 +313,7 @@ const getPidFromServer = async (deploymentSocket: any) => {
         const messageHandler = (msg: any) => {
             try {
                 let msgTest = msg.toString();
-                if (msgTest.includes("./code tunnel")) {
+                if (msgTest.includes("./.codesphere-internal/code tunnel")) {
                     const pidRegex = /user\s+(\d+)/i; 
                     const pidMatch = msgTest.match(pidRegex);
                     if (pidMatch && pidMatch.length > 1) {
