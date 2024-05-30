@@ -324,6 +324,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           await request(uaSocket, "terminalStream", { method: "data", data: "disown\r" }, "workspace-proxy", 7);
 
           const pidTerminal = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
+          
           const pidTerminalName = pidTerminal.data.name;
 
           await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: pidTerminalName }, "workspace-proxy", 8);
