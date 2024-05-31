@@ -186,7 +186,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const terminalSessionsResponse = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
           const tmuxSessionName = terminalSessionsResponse.data.name;
 
-          await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 4);
+          await request(uaSocket, "terminalStream", { method: "init", teamId: teamId, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 4);
 
           const bashFilePath  = vscode.Uri.joinPath(this._extensionUri, "src", "sh", "installVSCodeServer.sh");
           const bashScript = await readBashFile(bashFilePath.fsPath);
@@ -203,43 +203,66 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             const terminalSessionsBgProcess = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
             const tmuxSessionNameBgProcess = terminalSessionsBgProcess.data.name;
             
-            await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess }, "workspace-proxy", 7);
+            await request(uaSocket, "terminalStream", { method: "init", teamId: teamId, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess }, "workspace-proxy", 7);
             await request(uaSocket, "terminalStream", { method: "data", data: "nohup ./.codesphere-internal/code tunnel > .codesphere-internal/nohup.out 2>&1 &\r" }, "workspace-proxy", 7);
             await request(uaSocket, "terminalStream", { method: "data", data: "^Z\r" }, "workspace-proxy", 7);
             await request(uaSocket, "terminalStream", { method: "data", data: "bg\r" }, "workspace-proxy", 7);
             await request(uaSocket, "terminalStream", { method: "data", data: "disown\r" }, "workspace-proxy", 7);
-  
-            const pidTerminal = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
-            const pidTerminalName = pidTerminal.data.name;
-  
-            await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: pidTerminalName }, "workspace-proxy", 8);
-            await request(uaSocket, "terminalStream", { method: "data", data: "ps aux\r" }, "workspace-proxy", 8);
-  
-            getPidFromServer(uaSocket).then(async (pid: string) => {
-              let activeTunnel: any = cache.get(`codesphere.activeTunnel`);
-              activeTunnel[workspaceId] = {};
-              activeTunnel[workspaceId]['pid'] = `${pid}`;
-              cache.update(`codesphere.activeTunnel`, activeTunnel);
-  
-              await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: pidTerminalName}, "workspace-proxy", 11);
-              await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionNameBgProcess}, "workspace-proxy", 12);
 
-              this._view?.webview.postMessage({ 
-                type: "loadingFinished", 
-                value: {   
-                    'workspaceId': `${workspaceId}`
-                }
-              });
+            await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionNameBgProcess}, "workspace-proxy", 12);
   
-              this._view?.webview.postMessage({ 
-                type: "is connected", 
-                value: {  
-                    'activeTunnels': `${cache.get(`codesphere.activeTunnel`)}`
-                }
-              });
-              activeTunnel = cache.get(`codesphere.activeTunnel`);
-              this._view?.webview.postMessage({ type: "activeWorkspaces", value: activeTunnel });
+            // const pidTerminal = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
+            // const pidTerminalName = pidTerminal.data.name;
+  
+            // await request(uaSocket, "terminalStream", { method: "init", teamId: teamId, workspaceId: workspaceId, tmuxSessionName: pidTerminalName }, "workspace-proxy", 8);
+            // await request(uaSocket, "terminalStream", { method: "data", data: "ps aux\r" }, "workspace-proxy", 8);
+            
+            let activeTunnel: any = cache.get(`codesphere.activeTunnel`);
+            activeTunnel[workspaceId] = {};
+            cache.update(`codesphere.activeTunnel`, activeTunnel);
+
+            this._view?.webview.postMessage({ 
+              type: "loadingFinished", 
+              value: {   
+                  'workspaceId': `${workspaceId}`
+              }
             });
+
+            this._view?.webview.postMessage({ 
+              type: "is connected", 
+              value: {  
+                  'activeTunnels': `${cache.get(`codesphere.activeTunnel`)}`
+              }
+            });
+
+            activeTunnel = cache.get(`codesphere.activeTunnel`);
+            this._view?.webview.postMessage({ type: "activeWorkspaces", value: activeTunnel });
+
+            // getPidFromServer(uaSocket).then(async (pid: string) => {
+            //   let activeTunnel: any = cache.get(`codesphere.activeTunnel`);
+            //   activeTunnel[workspaceId] = {};
+            //   activeTunnel[workspaceId]['pid'] = `${pid}`;
+            //   cache.update(`codesphere.activeTunnel`, activeTunnel);
+  
+            //   await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: pidTerminalName}, "workspace-proxy", 11);
+            //   await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionNameBgProcess}, "workspace-proxy", 12);
+
+            //   this._view?.webview.postMessage({ 
+            //     type: "loadingFinished", 
+            //     value: {   
+            //         'workspaceId': `${workspaceId}`
+            //     }
+            //   });
+  
+            //   this._view?.webview.postMessage({ 
+            //     type: "is connected", 
+            //     value: {  
+            //         'activeTunnels': `${cache.get(`codesphere.activeTunnel`)}`
+            //     }
+            //   });
+            //   activeTunnel = cache.get(`codesphere.activeTunnel`);
+            //   this._view?.webview.postMessage({ type: "activeWorkspaces", value: activeTunnel });
+            // });
           }
           
           await request(uaSocket, "terminalStream", { method: "data", data: "[B\r" }, "workspace-proxy", 4);
@@ -317,30 +340,32 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const terminalSessionsBgProcess = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
           const tmuxSessionNameBgProcess = terminalSessionsBgProcess.data.name;
           
-          await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess }, "workspace-proxy", 7);
+          await request(uaSocket, "terminalStream", { method: "init", teamId: teamId, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess }, "workspace-proxy", 7);
           await request(uaSocket, "terminalStream", { method: "data", data: "nohup ./.codesphere-internal/code tunnel > .codesphere-internal/nohup.out 2>&1 &\r" }, "workspace-proxy", 7);
           await request(uaSocket, "terminalStream", { method: "data", data: "^Z\r" }, "workspace-proxy", 7);
           await request(uaSocket, "terminalStream", { method: "data", data: "bg\r" }, "workspace-proxy", 7);
           await request(uaSocket, "terminalStream", { method: "data", data: "disown\r" }, "workspace-proxy", 7);
 
-          const pidTerminal = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
+          await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionNameBgProcess}, "workspace-proxy", 12);
+
+          // const pidTerminal = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
           
-          const pidTerminalName = pidTerminal.data.name;
+          // const pidTerminalName = pidTerminal.data.name;
 
-          await request(uaSocket, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: pidTerminalName }, "workspace-proxy", 8);
-          await request(uaSocket, "terminalStream", { method: "data", data: "ps aux\r" }, "workspace-proxy", 8);
+          // await request(uaSocket, "terminalStream", { method: "init", teamId: teamId, workspaceId: workspaceId, tmuxSessionName: pidTerminalName }, "workspace-proxy", 8);
+          // await request(uaSocket, "terminalStream", { method: "data", data: "ps aux\r" }, "workspace-proxy", 8);
 
-          getPidFromServer(uaSocket).then(async (pid: string) => {
-            cache.update(`codesphere.pid${workspaceId}`, pid);
+          // await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: pidTerminalName}, "workspace-proxy", 11);
+          
 
-            let activeTunnel = JSON.stringify(cache.get(`codesphere.activeTunnel`));
-            let activeTunnnel = JSON.parse(activeTunnel);
-            activeTunnnel[workspaceId]['pid'] = `${pid}`;
-            cache.update(`codesphere.activeTunnel`, activeTunnnel);
+          // getPidFromServer(uaSocket).then(async (pid: string) => {
+          //   cache.update(`codesphere.pid${workspaceId}`, pid);
 
-            await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: pidTerminalName}, "workspace-proxy", 11);
-            await request(uaSocket, "killTmuxSession", { workspaceId: workspaceId, sessionName: tmuxSessionNameBgProcess}, "workspace-proxy", 12);
-          });
+          //   let activeTunnel = JSON.stringify(cache.get(`codesphere.activeTunnel`));
+          //   let activeTunnnel = JSON.parse(activeTunnel);
+          //   activeTunnnel[workspaceId]['pid'] = `${pid}`;
+          //   cache.update(`codesphere.activeTunnel`, activeTunnnel);
+          // });
 
         });
 
@@ -388,6 +413,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const workspaceName = data.value.workspaceName;
           const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
+          const teamId = data.value.teamId;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
 
           let uaSocketconnect = getUaSocket();
@@ -398,7 +424,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const terminalSessionsResponse = await request(uaSocketconnect, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 14);
           const tmuxSessionName = terminalSessionsResponse.data.name;
 
-          await request(uaSocketconnect, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 15);
+          await request(uaSocketconnect, "terminalStream", { method: "init", teamId: teamId, workspaceId: workspaceId, tmuxSessionName: tmuxSessionName }, "workspace-proxy", 15);
           const bashFilePath  = vscode.Uri.joinPath(this._extensionUri, "src", "sh", "installVSCodeServer.sh");
           const bashScript = await readBashFile(bashFilePath.fsPath);
           await request(uaSocketconnect, "terminalStream", { method: "data", data: bashScript }, "workspace-proxy", 15);
@@ -426,7 +452,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             const terminalSessionsBgProcess2 = await request(uaSocketconnect, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
             const tmuxSessionNameBgProcess2 = terminalSessionsBgProcess2.data.name;
             
-            await request(uaSocketconnect, "terminalStream", { method: "init", teamId: 35678, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess2 }, "workspace-proxy", 7);
+            await request(uaSocketconnect, "terminalStream", { method: "init", teamId: teamId, workspaceId: workspaceId, tmuxSessionName: tmuxSessionNameBgProcess2 }, "workspace-proxy", 7);
             
             // wait 500 ms
             await new Promise(resolve => setTimeout(resolve, 500));
