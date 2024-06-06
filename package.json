@@ -2,7 +2,7 @@
   "name": "codesphere",
   "displayName": "Codesphere",
   "description": "Connect VS Code to your Codesphere workspaces",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "icon": "media/Codesphere.png",
   "repository": {
     "type": "git",
@@ -101,9 +101,7 @@
     ]
   },
   "extensionPack": [
-    "ms-vscode-remote.remote-ssh",
-    "ms-vscode-remote.remote-containers",
-    "ms-vscode-remote.remote-wsl"
+    "ms-vscode-remote.vscode-remote-extensionpack"
   ],
   "scripts": {
     "vscode:prepublish": "npm run package",
