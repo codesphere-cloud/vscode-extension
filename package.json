@@ -101,9 +101,7 @@
     ]
   },
   "extensionPack": [
-    "ms-vscode-remote.remote-ssh",
-    "ms-vscode-remote.remote-containers",
-    "ms-vscode-remote.remote-wsl"
+    "ms-vscode-remote.vscode-remote-extensionpack"
   ],
   "scripts": {
     "vscode:prepublish": "npm run package",
