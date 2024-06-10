@@ -25,7 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log('roothPath is: ', rootPath);
 
 		const activeSSH = vscode.env.remoteName;
-		console.log(activeSSH);
+		console.log('active tunnel ' + activeSSH);
 
 		context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
