@@ -24,9 +24,11 @@ export function activate(context: vscode.ExtensionContext) {
 		const fileTreeProvider = new FileTreeProvider(rootPath);
 		console.log('roothPath is: ', rootPath);
 
-		const activeSSH = vscode.env.remoteName;
+		const activeSSH = vscode.env.sessionId;
 		console.log('active tunnel ' + activeSSH);
 
+		const machineId = vscode.env.machineId;
+		console.log('machine id ' + machineId);
 		context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 			"codesphere-sidebar",
