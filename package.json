@@ -2,7 +2,7 @@
   "name": "codesphere",
   "displayName": "Codesphere",
   "description": "Connect VS Code to your Codesphere workspaces",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "icon": "media/Codesphere.png",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
   ],
   "pricing": "Free",
   "activationEvents": [
-    "onStartupFinished"
+    "*"
   ],
   "main": "./dist/extension.js",
   "contributes": {
