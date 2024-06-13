@@ -27,6 +27,9 @@ export function activate(context: vscode.ExtensionContext) {
 		const remoteName = vscode.env.remoteName;
 		console.log('remote name ' + remoteName);
 
+		const appHost = vscode.env.appHost;
+		console.log('app host ' + appHost);
+		
 		const activeSSH = vscode.env.sessionId;
 		console.log('active tunnel ' + activeSSH);
 
