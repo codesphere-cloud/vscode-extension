@@ -35,6 +35,11 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const machineId = vscode.env.machineId;
 		console.log('machine id ' + machineId);
+
+		const config = vscode.workspace.getConfiguration('remote.tunnels');
+
+		console.log('config ' + config);
+
 		context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 			"codesphere-sidebar",
