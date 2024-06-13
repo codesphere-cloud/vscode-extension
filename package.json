@@ -99,7 +99,7 @@
         "title": "Back to menu"
       }
     ],
-    "extensionKind": ["ui", "workspace"]
+    "extensionKind": ["ui"]
   },
   "extensionPack": [
     "ms-vscode-remote.vscode-remote-extensionpack"
