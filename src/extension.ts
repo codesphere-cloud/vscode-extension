@@ -38,7 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const config = vscode.workspace.getConfiguration('remote.tunnels');
 
-		console.log('config ' + config);
+		console.log('config ' + JSON.stringify(config));
 
 		context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
