@@ -24,6 +24,9 @@ export function activate(context: vscode.ExtensionContext) {
 		const fileTreeProvider = new FileTreeProvider(rootPath);
 		console.log('roothPath is: ', rootPath);
 
+		const remoteName = vscode.env.remoteName;
+		console.log('remote name ' + remoteName);
+
 		const activeSSH = vscode.env.sessionId;
 		console.log('active tunnel ' + activeSSH);
 
