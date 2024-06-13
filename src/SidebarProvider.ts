@@ -294,24 +294,24 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         });
 
         const delay = (ms: any) => new Promise(resolve => setTimeout(resolve, ms));
-        // afterTunnelInit(uaSocket, sanitizedName).then (async () => {
-        //   const isVSIXWorkspace = isVSIX(uaSocket);
-        //   let workspaceDev;
+        afterTunnelInit(uaSocket, sanitizedName).then (async () => {
+          const isVSIXWorkspace = isVSIX(uaSocket);
+          let workspaceDev;
           
-        //   isVSIXWorkspace.then((vsixState: boolean) => {
-        //     workspaceDev = vsixState;
-        //     console.log('workspaceDev', workspaceDev);
-        //     delay(100)
-        //     if (!workspaceDev) {
-        //         request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);
-        //     } else {
-        //         request(uaSocket, "terminalStream", { method: "data", data: `./.codesphere-internal/code tunnel --install-extension ./.codesphere-internal/${vsixFile} \r`}, "workspace-proxy", 4);
-        //     }
-        //   });
-        //   delay(300);
-        //     request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
-        //     request(uaSocket, "terminalStream", { method: "data", data: "echo $USE_VSIX \r"}, "workspace-proxy", 4);
-        // });
+          isVSIXWorkspace.then((vsixState: boolean) => {
+            workspaceDev = vsixState;
+            console.log('workspaceDev', workspaceDev);
+            delay(100)
+            if (!workspaceDev) {
+                request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);
+            } else {
+                request(uaSocket, "terminalStream", { method: "data", data: `./.codesphere-internal/code tunnel --install-extension ./.codesphere-internal/${vsixFile} \r`}, "workspace-proxy", 4);
+            }
+          });
+          delay(300);
+            request(uaSocket, "terminalStream", { method: "data", data: ""}, "workspace-proxy", 4);
+            request(uaSocket, "terminalStream", { method: "data", data: "echo $USE_VSIX \r"}, "workspace-proxy", 4);
+        });
         
         tunnelIsReady(uaSocket).then (async () => {
           let activeTunnel = JSON.stringify(cache.get(`codesphere.activeTunnel`));
