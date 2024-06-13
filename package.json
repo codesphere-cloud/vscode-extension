@@ -98,7 +98,8 @@
         "command": "codesphere.backToMenu",
         "title": "Back to menu"
       }
-    ]
+    ],
+    "extensionKind": ["ui", "workspace"]
   },
   "extensionPack": [
     "ms-vscode-remote.vscode-remote-extensionpack"
