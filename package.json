@@ -18,9 +18,7 @@
   ],
   "pricing": "Free",
   "activationEvents": [
-    "*",
-    "onAuthenticationRequest:github",
-    "onView:remoteTargets"
+    
   ],
   "main": "./dist/extension.js",
   "contributes": {
