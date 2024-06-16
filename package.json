@@ -18,7 +18,9 @@
   ],
   "pricing": "Free",
   "activationEvents": [
-    "onResolveRemoteAuthority:tunnel"
+    "*",
+    "onAuthenticationRequest:github",
+    "onView:remoteTargets"
   ],
   "main": "./dist/extension.js",
   "contributes": {

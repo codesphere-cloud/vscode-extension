@@ -15,63 +15,64 @@ function getWorkspaceRootPath(): string  {
     return ``;
 }
 
-
 export function activate(context: vscode.ExtensionContext) {
+	
+	vscode.ExtensionKind.UI;
 
-		const sidebarProvider = new SidebarProvider(context.extensionUri, context);
-		const noCurrentWorkspaceProvider = new NoCurrentWorkspaceProvider(context.extensionUri);
-		const rootPath: string = getWorkspaceRootPath();
-		const fileTreeProvider = new FileTreeProvider(rootPath);
-		console.log('roothPath is: ', rootPath);
+	const sidebarProvider = new SidebarProvider(context.extensionUri, context);
+	const noCurrentWorkspaceProvider = new NoCurrentWorkspaceProvider(context.extensionUri);
+	const rootPath: string = getWorkspaceRootPath();
+	const fileTreeProvider = new FileTreeProvider(rootPath);
+	console.log('roothPath is: ', rootPath);
 
-		const remoteName = vscode.env.remoteName;
-		console.log('remote name ' + remoteName);
+	const remoteName = vscode.env.remoteName;
+	console.log('remote name ' + remoteName);
 
-		const appHost = vscode.env.appHost;
-		console.log('app host ' + appHost);
-		
-		const activeSSH = vscode.env.sessionId;
-		console.log('active tunnel ' + activeSSH);
+	const appHost = vscode.env.appHost;
+	console.log('app host ' + appHost);
+	
+	const activeSSH = vscode.env.sessionId;
+	console.log('active tunnel ' + activeSSH);
 
-		const machineId = vscode.env.machineId;
-		console.log('machine id ' + machineId);
+	const machineId = vscode.env.machineId;
+	console.log('machine id ' + machineId);
 
-		const config = vscode.workspace.getConfiguration('remote.tunnels');
+	const config = vscode.workspace.getConfiguration('remote.tunnels');
 
-		console.log('config ' + JSON.stringify(config));
+	console.log('config ' + JSON.stringify(config));
 
-		context.subscriptions.push(
-			vscode.window.registerWebviewViewProvider(
-			"codesphere-sidebar",
-			sidebarProvider
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(
+		"codesphere-sidebar",
+		sidebarProvider
+		)
+	);
+
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(
+		"codesphere-noworkspace",
+		noCurrentWorkspaceProvider
+		)
+	);
+
+	context.subscriptions.push(
+		vscode.window.createTreeView(
+			'workspace-filetree', 
+			{ treeDataProvider: fileTreeProvider }
 			)
-		);
+	);		
 
-		context.subscriptions.push(
-			vscode.window.registerWebviewViewProvider(
-			"codesphere-noworkspace",
-			noCurrentWorkspaceProvider
-			)
-		);
+	const userData: any = context.globalState.get("codesphere.userData");
+	const gitEmail: string = userData.email || "";
+	let gitFirstName: string = userData.firstName || "";
+	let gitLastName: string = userData.lastName || "";
 
-		context.subscriptions.push(
-			vscode.window.createTreeView(
-				'workspace-filetree', 
-				{ treeDataProvider: fileTreeProvider }
-				)
-		);		
-
-		const userData: any = context.globalState.get("codesphere.userData");
-		const gitEmail: string = userData.email || "";
-		let gitFirstName: string = userData.firstName || "";
-		let gitLastName: string = userData.lastName || "";
-
-		if (!gitFirstName && !gitLastName && gitEmail) {
-			const emailParts = gitEmail.split("@");
-			if (emailParts.length > 0) {
-				gitFirstName = emailParts[0];
-			}
+	if (!gitFirstName && !gitLastName && gitEmail) {
+		const emailParts = gitEmail.split("@");
+		if (emailParts.length > 0) {
+			gitFirstName = emailParts[0];
 		}
+	}
 
 	const bashcommand = 'echo $WORKSPACE_ID';
 	const gitBashEmail = `git config --global user.email "${gitEmail}"`;
