@@ -18,7 +18,7 @@
   ],
   "pricing": "Free",
   "activationEvents": [
-    
+    "*"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -99,7 +99,7 @@
         "title": "Back to menu"
       }
     ],
-    "extensionKind": ["ui"]
+    "extensionKind": ["workspace"]
   },
   "extensionPack": [
     "ms-vscode-remote.vscode-remote-extensionpack"
