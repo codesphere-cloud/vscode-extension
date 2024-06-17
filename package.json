@@ -29,6 +29,14 @@
           "title": "Codesphere",
           "icon": "media/codesphere.svg"
         }
+      ],
+      "panel": [
+        {
+          "id": "ci-pipeline",
+          "title": "Ci-Pipeline",
+          "icon": "media/codesphere.svg",
+          "order": 10
+        }
       ]
     },
     "views": {
@@ -51,6 +59,15 @@
           "name": "Codesphere",
           "icon": "media/Codesphere.svg",
           "contextualTitle": "Codesphere"
+        }
+      ],
+      "ci-pipeline": [
+        {
+          "type": "webview",
+          "id": "ci-pipeline",
+          "name": "Ci-Pipeline",
+          "contextualTitle": "Ci Pipeline",
+          "when": "codesphere.isLoggedIn && codesphere.workspaceOverview"
         }
       ]
     },

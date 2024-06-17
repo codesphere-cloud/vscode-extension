@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { SidebarProvider } from './SidebarProvider';
 import { FileTreeProvider } from './FileTreeProvider';
+import { CiPipelineProvider } from './CiPipelineProvider';	
 import { NoCurrentWorkspaceProvider } from './NoCurrentWorkspaceProvider';
 import { reloadCache } from './ts/reloadCache';
 import { exec } from 'child_process';
@@ -16,14 +17,12 @@ function getWorkspaceRootPath(): string  {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	
-	vscode.ExtensionKind.UI;
-
 	const sidebarProvider = new SidebarProvider(context.extensionUri, context);
 	const noCurrentWorkspaceProvider = new NoCurrentWorkspaceProvider(context.extensionUri);
 	const rootPath: string = getWorkspaceRootPath();
 	const fileTreeProvider = new FileTreeProvider(rootPath);
 	console.log('roothPath is: ', rootPath);
+	const ciPipelineProvider = new CiPipelineProvider(context.extensionUri, context);
 
 	const remoteName = vscode.env.remoteName;
 	console.log('remote name ' + remoteName);
@@ -61,6 +60,13 @@ export function activate(context: vscode.ExtensionContext) {
 			{ treeDataProvider: fileTreeProvider }
 			)
 	);		
+
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(
+			'ci-pipeline',
+			ciPipelineProvider
+		)
+	);
 
 	const userData: any = context.globalState.get("codesphere.userData");
 	const gitEmail: string = userData.email || "";
