@@ -17,9 +17,21 @@
     "Other"
   ],
   "pricing": "Free",
+  "enabledApiProposals": [
+      "resolvers",
+      "terminalDataWriteEvent",
+      "contribViewsRemote"
+  ],
   "activationEvents": [
+    "onResolveAuthority:codesphere",
+    "onView:remoteHosts",
     "*"
   ],
+  "capabilities": {
+      "untrustedWorkspaces": {
+          "supported": true
+      }
+  },
   "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -28,6 +40,14 @@
           "id": "codesphere-sidebar-view",
           "title": "Codesphere",
           "icon": "media/codesphere.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "ci-pipeline",
+          "title": "Ci-Pipeline",
+          "icon": "media/codesphere.svg",
+          "order": 10
         }
       ]
     },
@@ -51,6 +71,15 @@
           "name": "Codesphere",
           "icon": "media/Codesphere.svg",
           "contextualTitle": "Codesphere"
+        }
+      ],
+      "ci-pipeline": [
+        {
+          "type": "webview",
+          "id": "ci-pipeline",
+          "name": "Ci-Pipeline",
+          "contextualTitle": "Ci Pipeline",
+          "when": "codesphere.isLoggedIn && codesphere.workspaceOverview"
         }
       ]
     },
@@ -99,7 +128,7 @@
         "title": "Back to menu"
       }
     ],
-    "extensionKind": ["workspace"]
+    "extensionKind": ["ui"]
   },
   "extensionPack": [
     "ms-vscode-remote.vscode-remote-extensionpack"

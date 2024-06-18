@@ -68,6 +68,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
       cache.update("codesphere.isLoggedIn", true);
       webviewView.webview.html = this._getHtmlWebviewOverview(webviewView.webview);
+      cache.update('codesphere.workspaceOverview', cache.get('codesphere.currentWorkspace'));
+      vscode.commands.executeCommand('setContext', 'codesphere.workspaceOverview', cache.get('codesphere.currentWorkspace'));
       console.log('Congratulations, your extension "codesphere" is now active! You are logged in.');
 
       let currentWorkspace = parseInt(cache.get('codesphere.currentWorkspace') as string);
@@ -128,6 +130,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       cache.update("codesphere.activeTunnel", {});
     }
 
+    if (!cache.get("codesphere.workspaceOverview")) {
+      cache.update("codesphere.workspaceOverview", '');
+    }
+
     cache.setKeysForSync(["codesphere.isLoggedIn", 
                           "codesphere.accessTokenCache", 
                           "codesphere.teams", 
@@ -135,7 +141,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                           "codesphere.userData", 
                           "codesphere.lastCode", 
                           "codesphere.activeTunnel",
-                          "codesphere.currentWorkspace"]);
+                          "codesphere.currentWorkspace",
+                          "codesphere.workspaceOverview"]);
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
       let socket: any;
@@ -670,6 +677,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             return;
           }
           webviewView.webview.html = this._getHtmlWebviewOverview(webviewView.webview);
+          vscode.commands.executeCommand('setContext', 'codesphere.workspaceOverview', data.value.workspaceId);
           const workspacesInTeam: any = cache.get("codesphere.workspaces");
           const teamId = data.value.teamId; 
         
@@ -679,6 +687,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           );
           
           cache.update("codesphere.currentconnectedWorkspace", selectedWorkspace);
+          cache.update("codesphere.workspaceOverview", selectedWorkspace);
 
           if (selectedWorkspace === cache.get("codesphere.currentWorkspace")) {
             vscode.commands.executeCommand('codesphere.openOverView', selectedWorkspace);
@@ -694,6 +703,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           } else {
             console.error("Workspace not found with ID:", data.value.workspaceId);
           }
+          
           break;
         }
 
@@ -717,8 +727,11 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           if (!data.value) {
             return;
           }
+          // todo: check wether it is mandatory to erease the currentWorkspace context. I dont think so but at the moment i dont want to destroy anything
           webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
           vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
+          vscode.commands.executeCommand('setContext', 'codesphere.workspaceOverview', '');
+          cache.update('codesphere.workspaceOverview', '');
           vscode.commands.executeCommand('codesphere.backToMenu');
           break;
         }

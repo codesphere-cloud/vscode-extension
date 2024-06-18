@@ -270,18 +270,18 @@
         <div class="teamTree" key={team.id}>
             <div class="teams" on:click={() => toggleAccordion(team.id)} role="presentation">
                 <div style="display:flex">
-                <!-- Toggle arrow icon -->
-                {#if team.open}
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                </svg>                   
-                {:else}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                  </svg>                 
-                {/if}
-                <span class="">{team.name}</span>
-            </div>
+                    <!-- Toggle arrow icon -->
+                    {#if team.open}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                    </svg>                   
+                    {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>                 
+                    {/if}
+                    <span class="">{team.name}</span>
+                </div>
 
             {#if team.avatarUrl}
                 <img src={team.avatarUrl} alt="Team Avatar" class="workspaceAvatar">
