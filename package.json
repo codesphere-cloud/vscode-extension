@@ -18,19 +18,20 @@
   ],
   "pricing": "Free",
   "enabledApiProposals": [
-      "resolvers",
-      "terminalDataWriteEvent",
-      "contribViewsRemote"
+    "resolvers",
+    "terminalDataWriteEvent",
+    "contribViewsRemote",
+    "tunnels",
+    "tunnelFactory"
   ],
   "activationEvents": [
     "onResolveAuthority:codesphere",
-    "onView:remoteHosts",
     "*"
   ],
   "capabilities": {
-      "untrustedWorkspaces": {
-          "supported": true
-      }
+    "untrustedWorkspaces": {
+      "supported": true
+    }
   },
   "main": "./dist/extension.js",
   "contributes": {
@@ -128,7 +129,9 @@
         "title": "Back to menu"
       }
     ],
-    "extensionKind": ["ui"]
+    "extensionKind": [
+      "workspace"
+    ]
   },
   "extensionPack": [
     "ms-vscode-remote.vscode-remote-extensionpack"
