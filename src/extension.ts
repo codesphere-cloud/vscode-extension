@@ -17,6 +17,19 @@ function getWorkspaceRootPath(): string  {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+	//testing
+
+	const config = vscode.workspace.getConfiguration('remote.tunnels');
+
+	// Beispielhafte Einstellungen abrufen und anzeigen
+    const portMappings = config.get('portMappings');
+    const auth = config.get('auth');
+    const connectionTimeout = config.get('connectionTimeout');
+
+	console.log('portMappings: ', portMappings);
+	console.log('auth: ', auth);
+	console.log('connectionTimeout: ', connectionTimeout);
+
 	const sidebarProvider = new SidebarProvider(context.extensionUri, context);
 	const noCurrentWorkspaceProvider = new NoCurrentWorkspaceProvider(context.extensionUri);
 	const rootPath: string = getWorkspaceRootPath();
@@ -35,8 +48,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const machineId = vscode.env.machineId;
 	console.log('machine id ' + machineId);
-
-	const config = vscode.workspace.getConfiguration('remote.tunnels');
 
 	console.log('config ' + JSON.stringify(config));
 
@@ -225,4 +236,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+	
+}
