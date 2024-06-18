@@ -5,6 +5,8 @@ node_modules/**
 .yarnrc
 webpack.config.js
 vsc-extension-quickstart.md
+.codesphere-internal
+server
 **/tsconfig.json
 **/.eslintrc.json
 **/*.map
