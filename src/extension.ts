@@ -79,6 +79,7 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
+
 	const userData: any = context.globalState.get("codesphere.userData");
 	const gitEmail: string = userData.email || "";
 	let gitFirstName: string = userData.firstName || "";
@@ -191,6 +192,10 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('reload successful!');
 	}));
 	
+	context.subscriptions.push(vscode.commands.registerCommand('codesphere.configureHosts', async () => {
+        vscode.commands.executeCommand("workbench.action.openSettingsJson");
+    }));
+
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('codesphere.submenu', async () => {
