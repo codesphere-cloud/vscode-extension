@@ -179,7 +179,7 @@
     "typescript": "^5.3.3",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4",
-    "ws": "^8.16.0"
+    "ws": "^8.17.1"
   },
   "dependencies": {
     "@vscode/vsce": "^2.26.1",
