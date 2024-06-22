@@ -22,6 +22,14 @@
     let pullState = false;
     let pushState = false;
 
+    function openCiPanel () {
+        vscode.postMessage({
+            type: 'focusPanel',
+            value: {
+            }
+        });
+    }
+
     // function to wakr up on-demand workspaces on Codesphere
     function activateWorkspace (workspaceId, teamDatacenterId){
         vscode.postMessage({
@@ -300,8 +308,8 @@
 <style>
     .circle-container {
         position: relative;
-        width: 30px; /* Anpassen je nach Bedarf */
-        height: 30px; /* Anpassen je nach Bedarf */
+        width: 30px; 
+        height: 30px; 
     }
 
     .inner-circle {
@@ -331,16 +339,16 @@
     }
 
     .inner-circle {
-        width: 15px; /* Anpassen je nach Bedarf */
-        height: 15px; /* Anpassen je nach Bedarf */
+        width: 15px; 
+        height: 15px; 
         z-index: 1;
         animation-name: inner-bounce;
         animation-iteration-count: infinite;
     }
 
     .outer-circle {
-        width: 15px; /* Anpassen je nach Bedarf */
-        height: 15px; /* Anpassen je nach Bedarf */
+        width: 15px; 
+        height: 15px; 
         z-index: 0;
         animation-name: outer-bounce;
         animation-iteration-count: infinite;
@@ -348,23 +356,23 @@
 
     @keyframes inner-bounce {
         0%, 100% {
-        width: 15px; /* Anpassen je nach Bedarf */
-        height: 15px; /* Anpassen je nach Bedarf */
+        width: 15px; 
+        height: 15px; 
         }
         50% {
-        width: 5px; /* Anpassen je nach Bedarf */
-        height: 5px; /* Anpassen je nach Bedarf */
+        width: 5px; 
+        height: 5px; 
         }
     }
 
     @keyframes outer-bounce {
         0%, 100% {
-        width: 15px; /* Anpassen je nach Bedarf */
-        height: 15px; /* Anpassen je nach Bedarf */
+        width: 15px; 
+        height: 15px; 
         }
         50% {
-        width: 25px; /* Anpassen je nach Bedarf */
-        height: 25px; /* Anpassen je nach Bedarf */
+        width: 25px; 
+        height: 25px; 
         }
     }
 
@@ -429,18 +437,13 @@
         justify-content: start;
     }
 
-    /* .workspace-title {
-        font-size: 20px;
-        font-weight: bold;
-        margin-bottom: 10px;
-    } */
-
     .back-button {
         cursor: pointer;
         margin-bottom: 10px;
     }
 
     .openDeploymentButton {
+        width: 150px;
         padding: 8px;
         border: solid 1px #808080;
         border-radius: 5px;
@@ -456,36 +459,6 @@
         background: #80808026;
     }
 
-    .ci-pipelineBox {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        margin-bottom: 10px;
-    }
-
-    .pipelineStageTitle {
-        font-size: 15px;
-        font-weight: bold;
-    }
-
-    .pipelineStage {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        gap: 8px;
-        align-items: center;
-        padding: 16px;
-        border: 1px solid #808080;
-        border-radius: 5px;
-        margin-bottom: 10px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-
-    .pipelineStage:hover {
-        background-color: #80808026!important;
-    }
-
     .content-container {
         display: flex;
         flex-direction: column;
@@ -494,10 +467,13 @@
 
     .action-buttons {
         display: flex;
-        gap: 8px
+        flex-direction: column;
+        gap: 12px;
+        padding: 30px 30px 30px 30px;
     }
 
     #create-tunnel-button {
+        width: 150px;
         border-radius: 4px;
         padding-top: 12px;
         padding-bottom: 12px;
@@ -505,12 +481,6 @@
 
     #create-tunnel-button:hover {
         opacity: 80%;
-    }
-
-    .pipeline-info {
-        display: flex;
-        gap: 12px;
-        align-items: center;
     }
 
 </style>
@@ -525,83 +495,6 @@
         </h2>
         
     {/if}
-
-    <!--ci-pipeline-->
-
-    <div class="ci-pipelineBox">
-        <div class="pipelineStage" on:click={() => startPrepareStage(overviewData.workspace.id, overviewData.workspace.dataCenterId)} role="presentation" style="background-color: {prepareStageSuccess === 'success' ? 'green' : (prepareStageSuccess === 'failure' ? 'red' : 'inherit')}">
-            <div class="pipeline-info">
-                <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 66 66" style="enable-background:new 0 0 66 66;" xml:space="preserve" width="24" height="24">
-                    <g>
-                        <path fill="white" d="M43,40H23c-1.7,0-3,1.3-3,3v20c0,1.7,1.3,3,3,3h20c1.7,0,3-1.3,3-3V43C46,41.3,44.7,40,43,40z M40,60H26V46h14V60z M24,40
-                            H1.9C0.9,40,0,40.9,0,41.9V64c0,1.1,0.9,2,2,2h22c1.1,0,2-0.9,2-2V42C26,40.9,25.1,40,24,40z M20,60H6V46h14V60z M46,20H24
-                            c-2.2,0-4,1.8-4,4v22h26V20z M40,40H26V26h14V40z M63,40H43c-1.7,0-3,1.3-3,3v20c0,1.7,1.3,3,3,3h20.9c1.2,0,2.1-0.9,2.1-2.1V43
-                            C66,41.3,64.7,40,63,40z M60,60H46V46h14V60z M66,20H44c-2.2,0-4,1.8-4,4v22h26V20z M60,40H46V26h14V40z M64,0H44c-2.2,0-4,1.8-4,4
-                            v22h26V2C66,0.9,65.1,0,64,0z M60,20H46V6h14V20z"></path>
-                    </g>
-                    </svg>
-                <div class="pipelineStageTitle">Prepare</div>
-            </div>
-            {#if prepareStageSate}
-                <div class="animation-container">
-                    <div class="circle-container">
-                        <div class="inner-circle" class:animate={animateCircles}></div>
-                        <div class="outer-circle" class:animate={animateCircles}></div>
-                    </div>
-                </div>
-                {#if animateCircles} 
-                    <script>
-                        startAnimation(); 
-                    </script>
-                {/if}
-            {/if}
-        </div>
-        <div class="pipelineStage" on:click={() => startTestStage(overviewData.workspace.id, overviewData.workspace.dataCenterId)} role="presentation" style="background-color: {testStageSuccess === 'success' ? 'green' : (testStageSuccess === 'failure' ? 'red' : 'inherit')}">
-            <div class="pipeline-info">
-                <svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="white" fill-rule="evenodd" clip-rule="evenodd" d="M2.8957 3.93327V5.96872H4.98318V3.93327H2.8957ZM2.5957 2.63327C2.04342 2.63327 1.5957 3.08098 1.5957 3.63327V6.26872C1.5957 6.821 2.04342 7.26872 2.5957 7.26872H5.28318C5.83547 7.26872 6.28318 6.821 6.28318 6.26872V3.63327C6.28318 3.08099 5.83547 2.63327 5.28318 2.63327H2.5957Z"></path>
-                    <path fill="white" fill-rule="evenodd" clip-rule="evenodd" d="M7.56638 8.99432C7.83524 9.2322 7.86034 9.64299 7.62246 9.91185L4.39101 13.564C4.27195 13.6986 4.10251 13.7778 3.92293 13.783C3.74334 13.7882 3.56962 13.7188 3.44301 13.5913L1.79428 11.9313C1.54131 11.6765 1.54272 11.265 1.79743 11.012C2.05214 10.7591 2.46369 10.7605 2.71666 11.0152L3.87683 12.1833L6.64886 9.0504C6.88674 8.78155 7.29753 8.75644 7.56638 8.99432Z"></path>
-                    <path fill="white" fill-rule="evenodd" clip-rule="evenodd" d="M7.1958 4.95096C7.1958 4.59198 7.48682 4.30096 7.8458 4.30096H14.0958C14.4548 4.30096 14.7458 4.59198 14.7458 4.95096C14.7458 5.30995 14.4548 5.60096 14.0958 5.60096H7.8458C7.48682 5.60096 7.1958 5.30995 7.1958 4.95096Z"></path>
-                    <path fill="white" fill-rule="evenodd" clip-rule="evenodd" d="M7.1958 12.0447C7.1958 11.6857 7.48682 11.3947 7.8458 11.3947H14.0958C14.4548 11.3947 14.7458 11.6857 14.7458 12.0447C14.7458 12.4036 14.4548 12.6947 14.0958 12.6947H7.8458C7.48682 12.6947 7.1958 12.4036 7.1958 12.0447Z"></path>
-                </svg>
-                <div class="pipelineStageTitle">Test</div>
-            </div>
-            {#if testStageSate}
-                <div class="animation-container">
-                    <div class="circle-container">
-                        <div class="inner-circle" class:animate={animateCircles}></div>
-                        <div class="outer-circle" class:animate={animateCircles}></div>
-                    </div>
-                </div>
-                {#if animateCircles} 
-                    <script>
-                        startAnimation(); 
-                    </script>
-                {/if}
-            {/if}
-        </div>
-        <div class="pipelineStage" on:click={() => startRunStage(overviewData.workspace.id, overviewData.workspace.dataCenterId)} role="presentation" style="background-color: {runStageSuccess === 'success' ? 'green' : (runStageSuccess === 'failure' ? 'red' : 'inherit')}">
-            <div class="pipeline-info">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6.50194 4.13286C6.81243 3.95452 7.19458 3.9558 7.50387 4.13622L20.5039 11.7196C20.8218 11.905 21.0122 12.2502 20.9994 12.6181C20.9866 12.986 20.7727 13.3171 20.4426 13.48L7.44261 19.8967C7.13265 20.0497 6.76565 20.0318 6.47208 19.8493C6.17851 19.6668 6 19.3457 6 19V5C6 4.64193 6.19145 4.3112 6.50194 4.13286ZM8 6.74104V17.3912L17.8895 12.5099L8 6.74104Z" fill="white"></path>
-                </svg>
-                <div class="pipelineStageTitle">Run</div>
-            </div>
-                {#if runStageSate}
-                    <div class="animation-container">
-                        <div class="circle-container">
-                            <div class="inner-circle" class:animate={animateCircles}></div>
-                            <div class="outer-circle" class:animate={animateCircles}></div>
-                        </div>
-                    </div>
-                    {#if animateCircles} 
-                        <script>
-                            startAnimation(); 
-                        </script>
-                    {/if}
-                {/if}
-        </div>
-    </div>
 
     <div class="action-buttons">
         {#if workspaceDeployed === false}
@@ -629,6 +522,14 @@
                 <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M3.51953 9.6623C3.51953 9.39307 3.73779 9.1748 4.00703 9.1748H8.28481C8.55405 9.1748 8.77231 9.39307 8.77231 9.6623C8.77231 9.93154 8.55405 10.1498 8.28481 10.1498H4.00703C3.73779 10.1498 3.51953 9.93154 3.51953 9.6623Z"></path>
             </svg>
         </a>
+        <div class="openDeploymentButton" on:click={() => openCiPanel()} role=presentation>
+            <span>Open CI-Pipeline</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 16" height="16" width="16">
+                <path fill="currentColor" d="M14.0917 1.2398C14.4471 1.29057 14.6941 1.61981 14.6433 1.97519L14.1433 5.47519C14.1189 5.64585 14.0277 5.79983 13.8898 5.90327C13.7519 6.0067 13.5786 6.05111 13.4079 6.02673L9.90791 5.52674C9.55254 5.47597 9.3056 5.14672 9.35637 4.79134C9.40714 4.43597 9.73638 4.18903 10.0918 4.2398L12.0733 4.52287C10.809 3.09408 9.30174 2.53327 7.99984 2.53327C5.04513 2.53327 2.64982 4.92855 2.64982 7.88327C2.64982 8.24225 2.3588 8.53327 1.99982 8.53327C1.64083 8.53327 1.34982 8.24225 1.34982 7.88327C1.34982 4.21057 4.32717 1.23327 7.99984 1.23327C9.7129 1.23327 11.5804 1.98295 13.0832 3.70321L13.3564 1.79134C13.4071 1.43597 13.7364 1.18903 14.0917 1.2398Z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                <path fill="currentColor" d="M1.90801 14.5267C1.55264 14.476 1.3057 14.1467 1.35647 13.7913L1.85646 10.2913C1.88084 10.1207 1.97202 9.96671 2.10993 9.86327C2.24784 9.75984 2.4212 9.71543 2.59186 9.73981L6.09183 10.2398C6.4472 10.2906 6.69414 10.6198 6.64337 10.9752C6.5926 11.3306 6.26336 11.5775 5.90798 11.5267L3.92648 11.2437C5.19071 12.6725 6.698 13.2333 7.99989 13.2333C10.9546 13.2333 13.3499 10.838 13.3499 7.88327C13.3499 7.52429 13.6409 7.23327 13.9999 7.23327C14.3589 7.23327 14.6499 7.52429 14.6499 7.88327C14.6499 11.556 11.6726 14.5333 7.99989 14.5333C6.28684 14.5333 4.41938 13.7836 2.91652 12.0633L2.6434 13.9752C2.59264 14.3306 2.26339 14.5775 1.90801 14.5267Z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                <path fill="currentColor" d="M9.39999 8.08324C9.39999 8.74598 8.86273 9.28324 8.2 9.28324C7.53726 9.28324 7 8.74598 7 8.08324C7 7.4205 7.53726 6.88324 8.2 6.88324C8.86273 6.88324 9.39999 7.4205 9.39999 8.08324Z"></path>
+            </svg>
+        </div>
     </div>
 
     {#if creatingTunnel === true}

@@ -76,10 +76,12 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.registerWebviewViewProvider(
 			'ci-pipeline',
 			ciPipelineProvider
-		)
+			
+		),
+		
 	);
 
-
+	vscode.workspace
 	const userData: any = context.globalState.get("codesphere.userData");
 	const gitEmail: string = userData.email || "";
 	let gitFirstName: string = userData.firstName || "";
@@ -195,6 +197,12 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('codesphere.configureHosts', async () => {
         vscode.commands.executeCommand("workbench.action.openSettingsJson");
     }));
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('codesphere.openCiPipeline', async () => {
+			vscode.commands.executeCommand("ci-pipeline.focus");
+		})
+	);
 
 
 	context.subscriptions.push(

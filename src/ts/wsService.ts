@@ -1,5 +1,6 @@
 import wsLib from 'ws';
 import * as vscode from "vscode";
+import { parse } from 'path';
 const fs = require('fs');
 
 let wsSeq = 1;
@@ -144,7 +145,7 @@ const request = (ws: any, method: any, args: any, name: any, wsId: any) => {
 const waitForWorkspaceRunning = async (deploymentSocket: any, cache: any, workspaceID: any) => {
     return new Promise((resolve, reject) => {
         // Handler für Nachrichten
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes("and use code")) {
                 const codeRegex = /use code\s*([A-Za-z0-9-]+)/i; 
@@ -154,7 +155,7 @@ const waitForWorkspaceRunning = async (deploymentSocket: any, cache: any, worksp
                     cache.update(`codesphere.lastCode${workspaceID}`, extractedCode);
                     // Wenn der Code extrahiert wurde, erfülle die Promise und entferne den Handler
                     resolve(extractedCode);
-                    deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+                    deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
                 }
             }
         };
@@ -166,7 +167,7 @@ const waitForWorkspaceRunning = async (deploymentSocket: any, cache: any, worksp
         };
 
         // Hinzufügen von Nachrichten- und Fehlerhandlern
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
@@ -174,19 +175,19 @@ const waitForWorkspaceRunning = async (deploymentSocket: any, cache: any, worksp
 const doesTunnelAlreadyExist = async (deploymentSocket: any, cache: any, workspaceID: any) => { 
     return new Promise((resolve, reject) => {
         // Handler für Nachrichten
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes("How would you like to log in to Visual Studio Code?")) {
                 resolve('not found');
-                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
             }
             if (msgTest.includes("Connected to an existing tunnel process running on this machine.")) {
                 resolve('found');
-                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
             }
             if (msgTest.includes("Open this link in your browser")) {
                 resolve('found-nopid');
-                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
             }
         };
 
@@ -197,17 +198,17 @@ const doesTunnelAlreadyExist = async (deploymentSocket: any, cache: any, workspa
         };
 
         // Hinzufügen von Nachrichten- und Fehlerhandlern
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
 
 const giveWorkspaceName = async (deploymentSocket: any) => {
     return new Promise<void>((resolve, reject) =>  {
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes("What would you like to call this machine?")) {
-                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
                 resolve(); // Kein Argument erforderlich
             }
         };
@@ -217,17 +218,17 @@ const giveWorkspaceName = async (deploymentSocket: any) => {
             reject(err);
         };
         // Hinzufügen von Nachrichten- und Fehlerhandlern
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
 
 const serverIsUp = async (deploymentSocket: any, cache: any, workspaceName:any, workspaceId: any) => {
     return new Promise<void>((resolve, reject) =>  {
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes(`Creating tunnel with the name: ${workspaceName}`)) {
-                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
                 resolve(); // Kein Argument erforderlich
             }
         };
@@ -237,17 +238,17 @@ const serverIsUp = async (deploymentSocket: any, cache: any, workspaceName:any, 
             reject(err);
         };
         // Hinzufügen von Nachrichten- und Fehlerhandlern
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
 
 const afterTunnelInit = async (deploymentSocket: any, workspaceName: any) => {
     return new Promise<void>((resolve, reject) =>  {
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes(`Open this link in your browser https://vscode.dev/tunnel/${workspaceName}/home/user/app`)) {
-                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
                 resolve(); // Kein Argument erforderlich
             }
         };
@@ -257,17 +258,17 @@ const afterTunnelInit = async (deploymentSocket: any, workspaceName: any) => {
             reject(err);
         };
         // Hinzufügen von Nachrichten- und Fehlerhandlern
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
 
 const tunnelIsReady = async (deploymentSocket: any) => {
     return new Promise<void>((resolve, reject) =>  {
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes(`Extension install complete`)) {
-                deploymentSocket.off("message", messageHandler); // Entferne den Handler für zukünftige Nachrichten
+                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
                 resolve(); // Kein Argument erforderlich
             }
         };
@@ -277,18 +278,18 @@ const tunnelIsReady = async (deploymentSocket: any) => {
             reject(err);
         };
         // Hinzufügen von Nachrichten- und Fehlerhandlern
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
 
 const wakeUpWorkspace = async (deploymentSocket: any) => {
     return new Promise<void>((resolve, reject) => {
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             try {
                 let msgTest = msg.toString();
                 if (msgTest.includes("Workspace already deployed") || msgTest.includes("Resources are deployed")) {
-                    deploymentSocket.off("message", messageHandler);
+                    deploymentSocket.off("message", nexLogHandler);
                     resolve();
                 }
                 
@@ -303,14 +304,14 @@ const wakeUpWorkspace = async (deploymentSocket: any) => {
             reject(err);
         };
         
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
 
 const getPidFromServer = async (deploymentSocket: any) => {
     return new Promise<void>((resolve, reject) => {
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             try {
                 let msgTest = msg.toString();
                 if (msgTest.includes("./.codesphere-internal/code tunnel")) {
@@ -320,7 +321,7 @@ const getPidFromServer = async (deploymentSocket: any) => {
                         const extractedPid = pidMatch[1];
                         console.log("Extracted PID: " + extractedPid);
                         resolve(extractedPid);
-                        deploymentSocket.off("message", messageHandler);
+                        deploymentSocket.off("message", nexLogHandler);
                     }
                 }
             } catch (error) {
@@ -334,18 +335,18 @@ const getPidFromServer = async (deploymentSocket: any) => {
             reject(err);
         };
         
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
 
 const waitForTerminal = async (deploymentSocket: any) => {
     return new Promise<void>((resolve, reject) => {
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             try {
                 let msgTest = msg.toString();
                 if (msgTest.includes("Welcome to Codesphere!")) {
-                    deploymentSocket.off("message", messageHandler);
+                    deploymentSocket.off("message", nexLogHandler);
                     resolve();
                 }
             } catch (error) {
@@ -359,22 +360,22 @@ const waitForTerminal = async (deploymentSocket: any) => {
             reject(err);
         };
         
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
 
-const waitForCiPipeline = async (deploymentSocket: any) => { 
+const waitForCiPipeline = async (deploymentSocket: any, endpoint: number) => { 
     return new Promise((resolve, reject) => {
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             try {
                 let msgTest = msg.toString();
-                if (msgTest.includes("success")) {
-                    deploymentSocket.off("message", messageHandler);
+                if (msgTest.includes("success") && msgTest.includes(`"endpointId":${endpoint}`)) {
+                    deploymentSocket.off("message", nexLogHandler);
                     resolve('success');
                 }
-                if (msgTest.includes("failure")) {
-                    deploymentSocket.off("message", messageHandler);
+                if (msgTest.includes("failure") && msgTest.includes(`"endpointId":${endpoint}`)) {
+                    deploymentSocket.off("message", nexLogHandler);
                     resolve('failure');
                 }
             } catch (error) {
@@ -388,141 +389,21 @@ const waitForCiPipeline = async (deploymentSocket: any) => {
             reject(err);
         };
         
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
 
 const checkCiPipelineState = async (deploymentSocket: any, endpointId: number) => {
     return new Promise((resolve, reject) => {
-        const messageHandler = (msg: any) => {
+        const nexLogHandler = (msg: any) => {
             try {
                 let msgTest = msg.toString();
                 let parsedMsg = JSON.parse(msgTest);
 
                 if (msgTest.includes(`"endpointId":${endpointId}`)) {
                     console.log(`tests14` + msgTest)
-                    deploymentSocket.off("message", messageHandler);
-                    deploymentSocket.off("error", errorHandler);
-                    resolve(parsedMsg.reply.state);
-                }
-            } catch (error) {
-                console.error("Error parsing message:", error);
-                reject(error);
-            }
-        };
-
-        const errorHandler = (err: any) => {
-            console.log("Socket exited with error:" + err);
-            reject(err);
-        };
-
-        deploymentSocket.on("message", messageHandler);
-        deploymentSocket.on("error", errorHandler);
-    });
-};
-
-const getRemoteURL = async (deploymentSocket: any) => {
-    return new Promise((resolve, reject) => {
-        const messageHandler = (msg: any) => {
-            try {
-                let msgTest = msg.toString();
-
-                if (msgTest.includes("https://github.com/")) {
-                    const urlRegex = /https:\/\/github.com\/([A-Za-z0-9-]+\/[A-Za-z0-9-]+)/i; 
-                    const urlMatch = msgTest.match(urlRegex);
-                    if (urlMatch && urlMatch.length > 1) {
-                        const extractedUrl = urlMatch[1];
-                        resolve(extractedUrl);
-                        deploymentSocket.off("message", messageHandler);
-                        deploymentSocket.off("error", errorHandler);
-                    }
-                }
-            } catch (error) {
-                console.error("Error parsing message:", error);
-                reject(error);
-            }
-        };
-
-        const errorHandler = (err: any) => {
-            console.log("Socket exited with error:" + err);
-            reject(err);
-        };
-        
-        deploymentSocket.on("message", messageHandler);
-        deploymentSocket.on("error", errorHandler);
-    });
-};
-
-const getGitHubToken = async (deploymentSocket: any) => {
-    return new Promise((resolve, reject) => {
-        const messageHandler = (msg: any) => {
-            try {
-                let msgTest = msg.toString();
-                let parsedMsg = JSON.parse(msgTest);
-
-                if (msgTest.includes("token")) {
-                    resolve(parsedMsg.reply.data.token);
-                    deploymentSocket.off("message", messageHandler);
-                    deploymentSocket.off("error", errorHandler);
-                }
-            } catch (error) {
-                console.error("Error parsing message:", error);
-                reject(error);
-            }
-        };
-
-        const errorHandler = (err: any) => {
-            console.log("Socket exited with error:" + err);
-            reject(err);
-        };
-        
-        deploymentSocket.on("message", messageHandler);
-        deploymentSocket.on("error", errorHandler);
-    });
-};
-
-const isVSIX = async (deploymentSocket: any) => {
-    return new Promise((resolve, reject) => {
-        const messageHandler = (msg: any) => {
-            try {
-                let msgTest = msg.toString();
-                if (msgTest.includes("true")) {
-                    resolve(true);
-                    deploymentSocket.off("message", messageHandler);
-                    deploymentSocket.off("error", errorHandler);
-                }
-                if (msgTest.includes("false")) {
-                    resolve(false);
-                    deploymentSocket.off("message", messageHandler);
-                    deploymentSocket.off("error", errorHandler);
-                }
-            } catch (error) {
-                console.error("Error parsing message:", error);
-                reject(error);
-            }
-        };
-
-        const errorHandler = (err: any) => {
-            console.log("Socket exited with error:" + err);
-            reject(err);
-        };
-        
-        deploymentSocket.on("message", messageHandler);
-        deploymentSocket.on("error", errorHandler);
-    });
-};
-
-const checkCiPipelineStructure = async (deploymentSocket: any, endpointId: number) => {
-    return new Promise((resolve, reject) => {
-        const messageHandler = (msg: any) => {
-            try {
-                let msgTest = msg.toString();
-                let parsedMsg = JSON.parse(msgTest);
-
-                if (msgTest.includes(`"endpointId":${endpointId}`)) {
-                    console.log(`ci-Structure` + msgTest)
-                    deploymentSocket.off("message", messageHandler);
+                    deploymentSocket.off("message", nexLogHandler);
                     deploymentSocket.off("error", errorHandler);
                     resolve(parsedMsg.reply);
                 }
@@ -537,11 +418,246 @@ const checkCiPipelineStructure = async (deploymentSocket: any, endpointId: numbe
             reject(err);
         };
 
-        deploymentSocket.on("message", messageHandler);
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
 
+const getRemoteURL = async (deploymentSocket: any) => {
+    return new Promise((resolve, reject) => {
+        const nexLogHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+
+                if (msgTest.includes("https://github.com/")) {
+                    const urlRegex = /https:\/\/github.com\/([A-Za-z0-9-]+\/[A-Za-z0-9-]+)/i; 
+                    const urlMatch = msgTest.match(urlRegex);
+                    if (urlMatch && urlMatch.length > 1) {
+                        const extractedUrl = urlMatch[1];
+                        resolve(extractedUrl);
+                        deploymentSocket.off("message", nexLogHandler);
+                        deploymentSocket.off("error", errorHandler);
+                    }
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", nexLogHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
+const getGitHubToken = async (deploymentSocket: any) => {
+    return new Promise((resolve, reject) => {
+        const nexLogHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+
+                if (msgTest.includes("token")) {
+                    resolve(parsedMsg.reply.data.token);
+                    deploymentSocket.off("message", nexLogHandler);
+                    deploymentSocket.off("error", errorHandler);
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", nexLogHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
+const isVSIX = async (deploymentSocket: any) => {
+    return new Promise((resolve, reject) => {
+        const nexLogHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                if (msgTest.includes("true")) {
+                    resolve(true);
+                    deploymentSocket.off("message", nexLogHandler);
+                    deploymentSocket.off("error", errorHandler);
+                }
+                if (msgTest.includes("false")) {
+                    resolve(false);
+                    deploymentSocket.off("message", nexLogHandler);
+                    deploymentSocket.off("error", errorHandler);
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", nexLogHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
+const checkCiPipelineStructure = async (deploymentSocket: any, endpointId: number) => {
+    return new Promise((resolve, reject) => {
+        const nexLogHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+
+                if (msgTest.includes(`"endpointId":${endpointId}`)) {
+                    console.log(`ci-Structure` + msgTest)
+                    deploymentSocket.off("message", nexLogHandler);
+                    deploymentSocket.off("error", errorHandler);
+                    resolve(parsedMsg.reply);
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+
+        deploymentSocket.on("message", nexLogHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
+
+const ciStepHandler = async (deploymentSocket: any, endpointId: number, endpointArray: Array<number>, postMessage: Function, stage: string) => {
+    return new Promise((resolve, reject) => {
+        const ciStageStatus = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+                
+                if (endpointArray.some(id => msgTest.includes(`"endpointId":${id}`))) {
+                    if (parsedMsg.reply && parsedMsg.reply[0] && parsedMsg.reply[0].data) {
+                        postMessage('updateCiPipelineLogs', {
+                            step: (parsedMsg.endpointId - 400),
+                            log: parsedMsg.reply[0].data,
+                            stage: stage
+                        });
+                    }
+                }
+
+                else if (endpointArray.some(endpointId => msgTest.includes(`"endpointId":${endpointId}`)) && 
+                    parsedMsg.reply.complete) {
+                    resolve('');
+                    cleanup();
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        
+        deploymentSocket.on("message", ciStageStatus);
+        deploymentSocket.on("error", errorHandler);
+
+        const cleanup = () => {
+            deploymentSocket.off("message", ciStageStatus);
+            deploymentSocket.off("error", errorHandler);
+        };
+    });
+};
+
+const ciStageStatusHandler = async (deploymentSocket: any, endpointId: number, postMessage: Function, stage: string) => {
+    return new Promise((resolve, reject) => {
+        const ciStageStatus = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+
+                if (msgTest.includes(`"endpointId":${endpointId}`)) {
+                    // ci-pipeline has finished successfully
+                    if (parsedMsg.reply.state === "success") {
+                        
+                        deploymentSocket.off("message", ciStageStatus);
+                        deploymentSocket.off("error", errorHandler);
+                        if (stage === 'prepare') {
+                            postMessage('ciPipelineStatus', {prepare: parsedMsg.reply, dynamic: 'prepare'} );
+                            postMessage('setActionButtion', {stage: 'prepare'});
+                        }
+                        if (stage === 'test') {
+                            postMessage('ciPipelineStatus', {test: parsedMsg.reply, dynamic: 'test'} );
+                            postMessage('setActionButtion', {stage: 'test'});
+                        }
+                        if (stage === 'run') {
+                            postMessage('ciPipelineStatus', {run: parsedMsg.reply, dynamic: 'run'} );
+                            postMessage('setActionButtion', {stage: 'run'});
+                        }
+                        resolve('success');
+                    }
+                    // ci-pipeline has failed
+                    if (parsedMsg.reply.state === "failure" || parsedMsg.reply.state === 'aborted') {
+                        deploymentSocket.off("message", ciStageStatus);
+                        deploymentSocket.off("error", errorHandler);
+
+                        if (stage === 'prepare') {
+                            postMessage('ciPipelineStatus', {prepare: parsedMsg.reply, dynamic: 'prepare'} );
+                            postMessage('setActionButtion', {stage: 'prepare'});
+                        }
+                        if (stage === 'test') {
+                            postMessage('ciPipelineStatus', {test: parsedMsg.reply, dynamic: 'test'} );
+                            postMessage('setActionButtion', {stage: 'test'});
+                        }
+                        if (stage === 'run') {
+                            postMessage('ciPipelineStatus', {run: parsedMsg.reply, dynamic: 'run'} );
+                            postMessage('setActionButtion', {stage: 'run'});
+                        }
+                        resolve('failure');
+                    }
+                    // ci-pipeline is still running
+                    // return the state of each step, so the UI can be updated
+                    if (parsedMsg.reply.state === "running") {
+                        
+                        postMessage('updateCiStageStatus', {status: parsedMsg.reply.steps, stage: stage, state: parsedMsg.reply.state} );
+                        
+                    }
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        
+        deploymentSocket.on("message", ciStageStatus);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
 
 
 
@@ -565,6 +681,8 @@ module.exports = {
     getGitHubToken,
     isVSIX,
     checkCiPipelineStructure,
+    ciStepHandler,
+    ciStageStatusHandler,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
 };

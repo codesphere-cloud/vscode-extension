@@ -308,7 +308,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           isVSIXWorkspace.then((vsixState: boolean) => {
             workspaceDev = vsixState;
             console.log('workspaceDev', workspaceDev);
-            delay(100)
+            delay(100);
             if (!workspaceDev) {
                 request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);
             } else {
@@ -733,6 +733,11 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           vscode.commands.executeCommand('setContext', 'codesphere.workspaceOverview', '');
           cache.update('codesphere.workspaceOverview', '');
           vscode.commands.executeCommand('codesphere.backToMenu');
+          break;
+        }
+
+        case 'focusPanel': {
+          vscode.commands.executeCommand('codesphere.openCiPipeline');
           break;
         }
 
