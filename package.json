@@ -17,15 +17,7 @@
     "Other"
   ],
   "pricing": "Free",
-  "enabledApiProposals": [
-    "resolvers",
-    "terminalDataWriteEvent",
-    "contribViewsRemote",
-    "tunnels",
-    "tunnelFactory"
-  ],
   "activationEvents": [
-    "onResolveAuthority:codesphere",
     "*"
   ],
   "capabilities": {
@@ -127,6 +119,11 @@
       {
         "command": "codesphere.backToMenu",
         "title": "Back to menu"
+      },
+      {
+        "command": "codesphere.openCiPipeline",
+        "title": "open CI-Pipeline panel",
+        "category": "Codesphere"
       }
     ],
     "extensionKind": [
@@ -149,7 +146,9 @@
     "validate": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-commonjs": "^25.0.8",
+    "@rollup/plugin-html": "^1.0.3",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-typescript": "^11.1.6",
     "@tsconfig/svelte": "^5.0.4",
@@ -184,6 +183,7 @@
   },
   "dependencies": {
     "@vscode/vsce": "^2.26.1",
+    "ansi-to-html": "^0.7.2",
     "axios": "^1.6.8",
     "exec-sh": "^0.4.0",
     "merge": "^2.1.1",
