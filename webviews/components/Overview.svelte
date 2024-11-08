@@ -21,6 +21,15 @@
     let runStageSuccess = '';
     let pullState = false;
     let pushState = false;
+    let codesphereURL;
+
+    function getInstanceURL() {
+        vscode.postMessage({
+            type: 'getInstanceURL',
+            value: {
+            }
+        });
+    }
 
     function openCiPanel () {
         vscode.postMessage({
@@ -43,7 +52,7 @@
 
     // function to create the deployment URL for the workspace
     function createWorkspaceURL(dcId, wsId) {
-        workspaceURL = `https://${wsId}-3000.${dcId}.codesphere.com`
+        workspaceURL = `https://${wsId}-3000.${dcId}.${codesphereURL}`
     }
 
     // funtion to set up the vscode server on Codesphere if it is not already running
@@ -293,6 +302,9 @@
                 case 'gitPush':
                     pushState = false;
                     break;
+                case 'getInstanceURL':
+                    codesphereURL = message.value;
+                    break;
             }   
         });
     });
@@ -303,6 +315,7 @@
     onMount(testAccessToken);
     onMount(getconnectedWorkspace);
     onMount(createWorkspaceURL);
+    onMount(getInstanceURL);
 </script>
 
 <style>

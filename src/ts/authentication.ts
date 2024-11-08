@@ -2,8 +2,8 @@ import axios from "axios";
 import * as vscode from "vscode";
 
 // Funktion zum Anmelden
-export function signIn(email: string, password: string): Promise<string> {
-    const signInUrl = 'https://codesphere.com/auth-service/signIn';
+export function signIn(email: string, password: string, instanceURL: string): Promise<string> {
+    const signInUrl = `${instanceURL}/auth-service/signIn`;
 
     const requestData = {
         email: email,
@@ -33,8 +33,8 @@ export function signIn(email: string, password: string): Promise<string> {
 }
 
 // Funktion zum Generieren des Access Tokens
-export function genAccessToken(sessionId: string, callback: (error: any, accessToken?: string) => void) {
-    const genAccessTokenUrl = 'https://codesphere.com/auth-service/genAccessToken';
+export function genAccessToken(sessionId: string, instanceURL: string, callback: (error: any, accessToken?: string) => void) {
+    const genAccessTokenUrl = `${instanceURL}/auth-service/genAccessToken`;
 
     const requestData = {
         id: sessionId

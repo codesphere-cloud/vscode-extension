@@ -263,7 +263,7 @@
 <div>
     <div class="userInfo">
         <h2>Your Teams</h2>
-        <img src={`https://storage.googleapis.com/codesphere-avatars/users/${user.userId}/${user.avatarId}`} alt="User Avatar" class="userAvatar">
+        <img src={user.avatarURL} alt="User Avatar" class="userAvatar">
     </div>
 
     {#each teamArray as team (team.id)}

@@ -134,6 +134,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       cache.update("codesphere.workspaceOverview", '');
     }
 
+    if (!cache.get("codesphere.instanceURL")) {
+      cache.update("codesphere.instanceURL", 'https://codesphere.com');
+    }
+
     cache.setKeysForSync(["codesphere.isLoggedIn", 
                           "codesphere.accessTokenCache", 
                           "codesphere.teams", 
@@ -142,7 +146,13 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                           "codesphere.lastCode", 
                           "codesphere.activeTunnel",
                           "codesphere.currentWorkspace",
-                          "codesphere.workspaceOverview"]);
+                          "codesphere.workspaceOverview",
+                          "codesphere.instanceURL"]);
+
+    let instanceURL: string = cache.get("codesphere.instanceURL") as string;
+    instanceURL = instanceURL.replace(/^https?:\/\//, '');
+    instanceURL = instanceURL.replace(/\/$/, '');
+    console.log(`instanceURL: ${instanceURL}`);
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
       let socket: any;
@@ -153,7 +163,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       switch (data.type) {
         case "testConnection": {
           try {
-              const response = await axios.post('https://codesphere.com/team-service/listTeams', {}, {
+              const response = await axios.post(`${instanceURL}/team-service/listTeams`, {}, {
                   headers: {
                       Authorization: `Bearer ${cache.get("codesphere.accessTokenCache")}`
                   }
@@ -180,7 +190,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }          
           const workspaceId = data.value.workspaceId;
           const workspaceName = data.value.workspaceName;
-          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
+          const socketURL = `wss://${data.value.datacenterId}.${instanceURL}/workspace-proxy`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
           const teamId = data.value.teamId;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
@@ -418,7 +428,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }
           const workspaceId = data.value.workspaceId;
           const workspaceName = data.value.workspaceName;
-          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
+          const socketURL = `wss://${data.value.datacenterId}.${instanceURL}/workspace-proxy`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
           const teamId = data.value.teamId;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
@@ -491,7 +501,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const workspaceId = data.value.workspaceId;
           const stage = data.value.stage;
 
-          const socketURL = `wss://${data.value.dcId}.codesphere.com/workspace-proxy`;
+          const socketURL = `wss://${data.value.dcId}.${instanceURL}/workspace-proxy`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
 
@@ -515,20 +525,42 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
 
         }
+
+        case "getInstanceURL": {
+          if (!data.value) {
+            return;
+          }
+          let instanceURL = cache.get("codesphere.instanceURL");
+          this._view?.webview.postMessage({ type: "getInstanceURL", value: instanceURL });
+          break;
+        }
+
+        case "updateInstanceURL": {
+          if (!data.value) {
+            return;
+          }
+          let url = data.value.url;
+          await cache.update("codesphere.instanceURL", url);
+          this._view?.webview.postMessage({ type: "updateInstanceURL"});
+
+          break;
+        }
+        
         case "signin": {
           if (!data.value) {
               return;
           }
       
           try {
-              const sessionId = await signIn(data.value.email, data.value.password);
+            const instanceURL = cache.get("codesphere.instanceURL");
+              const sessionId = await signIn(data.value.email, data.value.password, instanceURL as string);
       
               await this.extensionContext.secrets.store("codesphere.sessionId", sessionId as string);
       
               const storedSessionId = await this.extensionContext.secrets.get("codesphere.sessionId");
-      
+
               const accessToken = await new Promise<string>((resolve, reject) => {
-                  genAccessToken(storedSessionId as string, (error: Error | null, accessToken?: string) => {
+                  genAccessToken(storedSessionId as string, instanceURL as string, (error: Error | null, accessToken?: string) => {
                       if (error) {
                           return reject(error);
                       }
@@ -544,7 +576,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       
               console.log('accessTokentesti', accessToken);
       
-              await reloadCache(accessToken, (error, teams, workspaces, userData) => {
+              await reloadCache(accessToken, instanceURL as string, (error, teams, workspaces, userData) => {
                 if (error) {
                   vscode.window.showErrorMessage('An error occurred while reloading cache: ' + error.message);
                   return;
@@ -643,7 +675,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         case "activateWorkspace": {
           // wakes up sleeping on-demand workspaces when open workspace accordion in the UI
           const workspaceId = data.value.workspaceId;
-          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/deployment-service`;
+          const socketURL = `wss://${data.value.datacenterId}.${instanceURL}/deployment-service`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "deployment-service", accessToken, cache, workspaceId);
           uaSocket2 = getUaSocket();
@@ -747,7 +779,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }
           const delay = (ms: any) => new Promise(resolve => setTimeout(resolve, ms));
           const workspaceId = data.value.workspaceId;
-          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
+          const socketURL = `wss://${data.value.datacenterId}.${instanceURL}/workspace-proxy`;
           const accessToken = cache.get("codesphere.accessTokenCache");
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
           let uaSocketconnect2 = getUaSocket();
@@ -802,8 +834,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         //   vscode.commands.executeCommand('remote-explorer.signIntoTunnelGithub', 'hello-react');
         //   const accessToken = cache.get("codesphere.accessTokenCache");
         //   const workspaceId = data.value.workspaceId;
-        //   const socketURLPull = `wss://${data.value.dataCenterId}.codesphere.com/workspace-proxy`;
-        //   const socketURLGitHubToken = `wss://${data.value.dataCenterId}.codesphere.com/ide-service`;
+        //   const socketURLPull = `wss://${data.value.dataCenterId}.${instanceURL}/workspace-proxy`;
+        //   const socketURLGitHubToken = `wss://${data.value.dataCenterId}.${instanceURL}/ide-service`;
         //   const delay = (ms: any) => new Promise(resolve => setTimeout(resolve, ms));
 
         //   // generate gitHub accessToken

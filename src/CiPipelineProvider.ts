@@ -45,10 +45,14 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
       webviewView.webview.onDidReceiveMessage(async (data) => {
         let socket: any;
         let uaSocket = getUaSocket();
+        let instanceURL: string = cache.get("codesphere.instanceURL") as string;
+        instanceURL = instanceURL.replace(/^https?:\/\//, '');
+        instanceURL = instanceURL.replace(/\/$/, '');
+        console.log(`instanceURL: ${instanceURL}`);
 
         switch (data.type) {
             case "getCiPipelineStages": {
-                const socketURL = `wss://${data.value.dataCenterId}.codesphere.com/workspace-proxy`;
+                const socketURL = `wss://${data.value.dataCenterId}.${instanceURL}/workspace-proxy`;
                 console.log(socketURL + `socketURL`);
                 const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
                 const workspaceID: number = parseInt(data.value.workspaceId); 
@@ -101,7 +105,7 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
                 value: {
                   stage: data.value.stage
                 }
-              })
+              });
               break;
             }
 
@@ -111,7 +115,7 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
               }
               const delay = (ms: any) => new Promise(resolve => setTimeout(resolve, ms));
               const workspaceId = parseInt(data.value.workspaceId);
-              const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
+              const socketURL = `wss://${data.value.datacenterId}.${instanceURL}/workspace-proxy`;
               const accessToken = cache.get("codesphere.accessTokenCache");
               socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
               let uaSocketconnect2 = getUaSocket();
@@ -172,7 +176,7 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
               const workspaceId = parseInt(data.value.workspaceId);
               const stage = data.value.stage;
               let endpoint: number = 0;
-              const socketURL = `wss://${data.value.dataCenterId}.codesphere.com/workspace-proxy`;
+              const socketURL = `wss://${data.value.dataCenterId}.${instanceURL}/workspace-proxy`;
               const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
               socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
               let uaSocket = getUaSocket();

@@ -17,7 +17,7 @@ function getWorkspaceRootPath(): string  {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	//testing
+	
 
 	const config = vscode.workspace.getConfiguration('remote.tunnels');
 
@@ -51,6 +51,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 	console.log('config ' + JSON.stringify(config));
 
+	vscode.workspace.getConfiguration('window').update('restoreWindows', 'none', vscode.ConfigurationTarget.Global);
+
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 		"codesphere-sidebar",
@@ -81,7 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
 		
 	);
 
-	vscode.workspace
+	
 	const userData: any = context.globalState.get("codesphere.userData");
 	const gitEmail: string = userData.email || "";
 	let gitFirstName: string = userData.firstName || "";
@@ -179,7 +181,8 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand('codesphere.reload', async () => {
 		const accessToken = await context.secrets.get("codesphere.accessToken");
 		if (accessToken) {
-			reloadCache(accessToken, (error, teams, workspaces, userData) => {
+			const instanceURL = await context.globalState.get("codesphere.instanceURL") as string;
+			reloadCache(accessToken, instanceURL, (error, teams, workspaces, userData) => {
 				if (error) {
 					vscode.window.showErrorMessage('An error occurred while reloading cache: ' + error.message);
 					return;
