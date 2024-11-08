@@ -163,21 +163,31 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       switch (data.type) {
         case "testConnection": {
           try {
-              const response = await axios.post(`${instanceURL}/team-service/listTeams`, {}, {
+              const accessToken = await cache.get("codesphere.accessTokenCache") as string;
+              console.log('accessToken', accessToken);
+
+              const url = `https://${instanceURL}/team-service/listTeams`;
+              console.log('url12345', url);
+              
+              const response = await axios.post(url, {}, {
                   headers: {
-                      Authorization: `Bearer ${cache.get("codesphere.accessTokenCache")}`
-                  }
+                      Authorization: `Bearer ${accessToken}`
+                  },
+                  timeout: 5000
               });
+
+              console.log('response', JSON.stringify(response.data));
               if (response.data.code === "Ok") {
                   console.log("Token is valid");
               } else {
+                  console.log(`Fehler bei testConnection: ${response.data}`);
                   webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-                  console.log('Token is invalid');
-                  throw new Error(`Fehler beim Abrufen der Teams: ${response.data.errMessage}`);
+                  console.log('Token is invalid1');
+                  throw new Error(`Fehler beim Abrufen der Teams: ${response.data}`);
               }
           } catch (error) {
             webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-            console.log('Token is invalid');
+            console.log('Token is invalid2');
 
               throw new Error(`Fehler beim Abrufen der Teams: ${error}`);
           }
