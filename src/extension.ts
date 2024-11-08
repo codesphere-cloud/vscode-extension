@@ -120,7 +120,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', workspaceId);
 
 
-		if (workspaceId !== "") {
+		if (workspaceId !== "" && workspaceId !== "$WORKSPACE_ID") {
 			const pwdUri = vscode.Uri.parse('home/user/app');
 			vscode.commands.executeCommand('vscode.openFolder', pwdUri);
 		}
