@@ -62,7 +62,7 @@
           "type": "webview",
           "id": "codesphere-sidebar",
           "name": "Codesphere",
-          "icon": "media/Codesphere.svg",
+          "icon": "media/codesphere.svg",
           "contextualTitle": "Codesphere"
         }
       ],
