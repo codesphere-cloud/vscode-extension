@@ -13,9 +13,7 @@ export class NoCurrentWorkspaceProvider implements vscode.WebviewViewProvider {
       this._view = webviewView;
   
       webviewView.webview.options = {
-        // Allow scripts in the webview
         enableScripts: true,
-  
         localResourceRoots: [this._extensionUri],
       };
 

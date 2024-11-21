@@ -1,11 +1,12 @@
-<script lang="ts">
+<script>
     import { onMount } from "svelte";
-    import "vscode-webview"
     import * as vscode from "vscode";
+    import "vscode-webview"
+    
 
     let email = '';
     let password = '';
-    let errorMessage = ''; // Anfangs leer
+    let errorMessage = ''; 
     let codesphereURL = "";
     let changeInstanceURL = "";
     let showURLModal = false;
@@ -51,7 +52,6 @@
     }
 
     onMount(() => {
-        console.log('live')
         window.addEventListener('message', event => {
             const message = event.data; // The JSON data our extension sent
             switch (message.type) {

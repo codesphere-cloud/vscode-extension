@@ -33,7 +33,6 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
       let cache = this.extensionContext.globalState;
 
       webviewView.webview.options = {
-        // Allow scripts in the webview
         enableScripts: true,
         localResourceRoots: [this._extensionUri],
       };
@@ -46,12 +45,10 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
         let instanceURL: string = cache.get("codesphere.instanceURL") as string;
         instanceURL = instanceURL.replace(/^https?:\/\//, '');
         instanceURL = instanceURL.replace(/\/$/, '');
-        console.log(`instanceURL: ${instanceURL}`);
 
         switch (data.type) {
             case "getCiPipelineStages": {
                 const socketURL = `wss://${data.value.dataCenterId}.${instanceURL}/workspace-proxy`;
-                console.log(socketURL + `socketURL`);
                 const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
                 const workspaceID: number = parseInt(data.value.workspaceId); 
                 socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceID);
@@ -61,7 +58,6 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
                 const ciPipelineCheck = checkCiPipelineStructure(uaSocket, 324);
                 ciPipelineCheck.then((ci: any) => {
                     ciStructure = ci;
-                    console.log('ciStructure: ' + JSON.stringify(ciStructure));
                     this._view?.webview.postMessage({ 
                         type: "CIPipelineStages", 
                         value: {   
@@ -198,7 +194,6 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
               await request(uaSocket, "startPipeline", { workspaceId: workspaceId, stage: stage }, "workspace-proxy", 32);
               
               for (let i = 0; i < data.value.stepcount; i++) {
-                console.log('stage');
                 request(uaSocket, "logs", { workspaceId: workspaceId, stage: stage, step:i }, "workspace-proxy", (400+i));
               }
               
@@ -210,7 +205,6 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
 
               
               while (!ciStageFinished) {
-                  console.log('Ci Pipeline is runing');
                   await delay(1000);
 
                   if (ciPipelineStatus === 'success') {

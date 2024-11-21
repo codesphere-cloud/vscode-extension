@@ -87,7 +87,6 @@
                 case 'listTeams':
                     teamArray = JSON.parse(message.value);
                     teamArray = [...teamArray];
-                    console.log('supsup' + teamArray);
                     break;
                 case 'getWorkspaces':
                     workspaceArray = JSON.parse(message.value);
@@ -103,7 +102,6 @@
                     workspaceToConnect = [...workspaceToConnect, message.value.state];
                     break;
                 case 'is connected':
-                    // define code which will affect the DOM depending on the message
                     activeWorkspaces = message.value.activeTunnels;
                     activeWorkspaces = {...activeWorkspaces};
                     
@@ -206,8 +204,8 @@
 
     .workspace {
         cursor: pointer;
-        display: flex; /* Flexbox verwenden */
-        align-items: center; /* Vertikal zentrieren */
+        display: flex; 
+        align-items: center; 
         transition: color .2s;
     }
 
@@ -294,7 +292,6 @@
                 {#if workspaceArray[team.id]}
                     {#each workspaceArray[team.id] as workspace}
                         <div class="workspaceBox">
-                            <!-- Hier Workspace-Informationen -->
                             <div class="workspaceAccordion" on:click={() => openOverview(workspace.id, team.id) } role="presentation">
                                 <h4 class="workspace" style="color: {activeWorkspaces[workspace.id] ? 'green' : 'inherit'}">
                                       

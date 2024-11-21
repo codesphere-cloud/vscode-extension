@@ -1,19 +1,19 @@
-// Funktion, um alle Buchstaben in Kleinbuchstaben umzuwandeln
+// convert all characters to lowercase
 function toLowerCaseLetters(str: string) {
     return str.replace(/[A-Z]/g, (char) => char.toLowerCase());
 }
 
-// Funktion zum Bereinigen und Umwandeln des Workspace-Namens
+// function to sanitize the workspace name
 export function sanitizeWorkspaceName(workspaceName: string) {
-    // Entferne alle Zeichen außer Buchstaben, Zahlen und Bindestrichen
+    // remove all characters that are not letters, numbers or hyphens
     let sanitized = workspaceName.replace(/[^a-zA-Z0-9-]/g, '-');
-    // Entferne eventuelle Doppel-Bindestriche
+    // remove multiple hyphens
     sanitized = sanitized.replace(/-{2,}/g, '-');
-    // Entferne Bindestriche am Anfang und Ende
+    // remove leading and trailing hyphens
     sanitized = sanitized.replace(/^-+|-+$/g, '');
-    // Begrenze auf die ersten 20 Zeichen
+    // limit the length to 20 characters
     sanitized = sanitized.substring(0, 19);
-    // Mache alle Buchstaben zu Kleinbuchstaben
-    sanitized = toLowerCaseLetters(sanitized); // Hier werden nur Buchstaben zu Kleinbuchstaben umgewandelt
+    // convert all characters to lowercase
+    sanitized = toLowerCaseLetters(sanitized); 
     return sanitized;
 }
