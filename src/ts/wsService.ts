@@ -8,7 +8,7 @@ let dsSocket: any;
 let uaSocket: any;
 
 
-const setupWs = (ws: any, name: string, accessToken: undefined, cache:any, workspaceID: string) => {
+const setupWs = (ws: any, name: string, accessToken: undefined, cache?:any, workspaceID?: string) => {
     let reconnectAttempts = 0;
     const RECONNECT_ATTEMPTS = 10000;
     const RECONNECT_DELAY = 5000;
@@ -659,6 +659,35 @@ const ciStageStatusHandler = async (deploymentSocket: any, endpointId: number, p
     });
 };
 
+const getSubdomainStructure = async (deploymentSocket: any, endpointId: any) => {
+    return new Promise((resolve, reject) => {
+        const nexLogHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+                if (msgTest.includes(`"endpointId":${endpointId}`)) {
+                    let workspaceHostingBaseDomain = parsedMsg.reply.data.workspaceHostingBaseDomain;
+                    console.log(`subdomain-Structure` + JSON.stringify(parsedMsg.reply.data.workspaceHostingBaseDomain));
+                    resolve(workspaceHostingBaseDomain);
+                    deploymentSocket.off("message", nexLogHandler);
+                }
+                
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", nexLogHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
 
 
                 
@@ -683,6 +712,7 @@ module.exports = {
     checkCiPipelineStructure,
     ciStepHandler,
     ciStageStatusHandler,
+    getSubdomainStructure,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
 };

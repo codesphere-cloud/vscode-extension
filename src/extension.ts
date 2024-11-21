@@ -77,8 +77,12 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 			'ci-pipeline',
-			ciPipelineProvider
-			
+			ciPipelineProvider,
+			{
+				webviewOptions: {
+					retainContextWhenHidden: true
+				}
+			}
 		),
 		
 	);
@@ -189,6 +193,7 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				context.globalState.update("codesphere.workspaces", workspaces);
 				context.globalState.update("codesphere.userData", userData);
+				context.globalState.update("codesphere.teams", teams);
 				vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction', 'codesphere-sidebar');
 			});
 		} else {

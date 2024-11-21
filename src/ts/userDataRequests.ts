@@ -1,5 +1,10 @@
 import axios from 'axios';
-
+import * as wsLib from 'ws';
+const { setupWs, 
+        request,
+        getUaSocket,
+        getSubdomainStructure 
+    } = require('./wsService');
 
 // Diese Funktion sendet einen POST-Request an die API, um die Teams abzurufen
 export async function listTeams(accessToken: string, instanceURL: string): Promise<any[]> {
@@ -11,6 +16,7 @@ export async function listTeams(accessToken: string, instanceURL: string): Promi
         });
 
         if (response.data.code === "Ok") {
+            console.log("test teams");
             return response.data.data;
         } else {
             throw new Error(`Fehler beim Abrufen der Teams: ${response.data.errMessage}`);
@@ -23,7 +29,26 @@ export async function listTeams(accessToken: string, instanceURL: string): Promi
   // Diese Funktion sendet einen POST-Request an die API, um die Workspaces abzurufen
   export async function listWorkspaces(accessToken: string, teams: Array<any>, instanceURL: string): Promise<{ [teamId: string]: Array<any> }> {
     try {
-        const workspacePromises = teams.map(async (team) => {
+        let socket: any;
+        let uaSocket: any;
+
+        // Funktion für künstliche Verzögerungen (falls benötigt)
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Map für die Ergebnisse
+        const workspaceMap: { [teamId: string]: Array<any> } = {};
+        let endpointId = 999;
+        for (const team of teams) {
+            // Initialisiere WebSocket-Verbindung, falls nicht vorhanden
+            if (!socket) {
+                const strippedURL = instanceURL.split("://")[1];
+                const socketURL = `wss://${team.defaultDataCenterId}.${strippedURL}/ide-service`;
+                console.log(`Socket URL: ${socketURL}`);
+                socket = await setupWs(new wsLib.WebSocket(socketURL), "ide-service", accessToken);
+                uaSocket = getUaSocket();
+            }
+
+            // Abrufen der Workspaces für das aktuelle Team
             const response = await axios.post(`${instanceURL}/workspace-service/listWorkspaces`, {
                 teamId: team.id
             }, {
@@ -33,24 +58,38 @@ export async function listTeams(accessToken: string, instanceURL: string): Promi
             });
 
             if (response.data.code === "Ok") {
-                return response.data.data;
+                // Subdomain-Struktur abrufen
+                const structure = getSubdomainStructure(uaSocket, endpointId);
+                
+                // Konfiguration abrufen
+                await request(uaSocket, "getBrowserConfig", {}, "ide-service", endpointId);
+
+                const subDomainStructure = await structure;
+                console.log(`Subdomain structure: ${subDomainStructure}`);
+
+                // Workspaces anreichern
+                const enrichedData = response.data.data.map((workspace: any) => ({
+                    ...workspace,
+                    subDomainStructure
+                }));
+
+                // Ergebnis im Map speichern
+                workspaceMap[team.id] = enrichedData;
+                endpointId++;
             } else {
                 throw new Error(`Fehler beim Abrufen der Workspaces für Team ${team.id}: ${response.data.errMessage}`);
             }
-        });
 
-        const workspaceArrays = await Promise.all(workspacePromises);
-
-        const workspaceMap: { [teamId: string]: Array<any> } = {};
-        teams.forEach((team, index) => {
-            workspaceMap[team.id] = workspaceArrays[index];
-        });
-
+            // Optional: Verzögerung einfügen (falls erforderlich)
+            // await delay(100); // Beispiel: 100ms Verzögerung
+        }
+        console.log(`${JSON.stringify(workspaceMap)}`);
         return workspaceMap;
     } catch (error) {
         throw new Error(`Fehler beim Abrufen der Workspaces: ${error}`);
     }
 }
+
 
 export async function getUserData(accessToken: string, instanceURL: string): Promise<any> {
     try {

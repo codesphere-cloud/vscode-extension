@@ -51,8 +51,10 @@
     }
 
     // function to create the deployment URL for the workspace
-    function createWorkspaceURL(dcId, wsId) {
-        workspaceURL = `https://${wsId}-3000.${dcId}.${codesphereURL}`
+    // TODO: instead of contructing the workspaceURL here, you can fetch it instead of globalStorage
+    // there might be connected a domain to a workspace, so if this is the case use the domain instead of base subdomain
+    function createWorkspaceURL(subDomainStructure, wsId) {
+        workspaceURL = `https://${wsId}-3000.${subDomainStructure}`
     }
 
     // funtion to set up the vscode server on Codesphere if it is not already running
@@ -219,7 +221,7 @@
                 case 'overviewData':
                     overviewData = message.value;
                     activateWorkspace(overviewData.workspace.id, overviewData.workspace.dataCenterId);
-                    createWorkspaceURL(overviewData.workspace.dataCenterId, overviewData.workspace.id);
+                    createWorkspaceURL(overviewData.workspace.subDomainStructure, overviewData.workspace.id);
                     getconnectedWorkspace();
                     break;
                 case 'resourcesDeployed':

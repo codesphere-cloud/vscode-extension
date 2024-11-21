@@ -165,7 +165,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           try {
               const accessToken = await cache.get("codesphere.accessTokenCache") as string;
               console.log('accessToken', accessToken);
-
+              instanceURL = cache.get("codesphere.instanceURL") as string;
+              instanceURL = instanceURL.replace(/^https?:\/\//, '');
+              instanceURL = instanceURL.replace(/\/$/, '');
+              
               const url = `https://${instanceURL}/team-service/listTeams`;
               console.log('url12345', url);
               
@@ -585,12 +588,18 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
               cache.update("codesphere.accessTokenCache", accessToken);
       
               console.log('accessTokentesti', accessToken);
-      
+              
+              // TODO: replace this call to the onMount function in webview to ensure, that all data get fetched when open the webview
+              // right now the data might be in an old state when opening the webview when already signed in
               await reloadCache(accessToken, instanceURL as string, (error, teams, workspaces, userData) => {
                 if (error) {
                   vscode.window.showErrorMessage('An error occurred while reloading cache: ' + error.message);
                   return;
                 }
+                // TODO: add functionality to add custom workspace subdomain + add domain if available to workspace
+                // add two key to the json object: 'subdomain' and 'domain'. subdomain must be constructed with workspaceID and base subdomain.
+                // domain must be fetched from /deployment-service websocket method: listDomainsByTeams
+                // this might be added to the 
                 cache.update("codesphere.workspaces", workspaces);
                 cache.update("codesphere.userData", userData);
                 cache.update("codesphere.teams", teams);

@@ -35,9 +35,7 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
       webviewView.webview.options = {
         // Allow scripts in the webview
         enableScripts: true,
-  
         localResourceRoots: [this._extensionUri],
-
       };
 
       webviewView.webview.html = this._getHtmlWebview(webviewView.webview);
