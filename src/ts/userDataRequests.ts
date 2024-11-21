@@ -1,10 +1,14 @@
 import axios from 'axios';
+import * as wsLib from 'ws';
+const { setupWs, 
+        request,
+        getUaSocket,
+        getSubdomainStructure 
+    } = require('./wsService');
 
-
-// Diese Funktion sendet einen POST-Request an die API, um die Teams abzurufen
-export async function listTeams(accessToken: string): Promise<any[]> {
+export async function listTeams(accessToken: string, instanceURL: string): Promise<any[]> {
     try {
-        const response = await axios.post('https://codesphere.com/team-service/listTeams', {}, {
+        const response = await axios.post(`${instanceURL}/team-service/listTeams`, {}, {
             headers: {
                 Authorization: `Bearer ${accessToken}`
             }
@@ -20,11 +24,23 @@ export async function listTeams(accessToken: string): Promise<any[]> {
     }
 }
   
-  // Diese Funktion sendet einen POST-Request an die API, um die Workspaces abzurufen
-  export async function listWorkspaces(accessToken: string, teams: Array<any>): Promise<{ [teamId: string]: Array<any> }> {
+  export async function listWorkspaces(accessToken: string, teams: Array<any>, instanceURL: string): Promise<{ [teamId: string]: Array<any> }> {
     try {
-        const workspacePromises = teams.map(async (team) => {
-            const response = await axios.post('https://codesphere.com/workspace-service/listWorkspaces', {
+        let socket: any;
+        let uaSocket: any;
+        let socketURL: any;
+        const strippedURL = instanceURL.split("://")[1];
+
+        const workspaceMap: { [teamId: string]: Array<any> } = {};
+        let endpointId = 999;
+        for (const team of teams) {
+            if (!socket || socketURL !== `wss://${team.defaultDataCenterId}.${strippedURL}/ide-service`) {
+                socketURL = `wss://${team.defaultDataCenterId}.${strippedURL}/ide-service`;
+                socket = await setupWs(new wsLib.WebSocket(socketURL), "ide-service", accessToken);
+                uaSocket = getUaSocket();
+            }
+
+            const response = await axios.post(`${instanceURL}/workspace-service/listWorkspaces`, {
                 teamId: team.id
             }, {
                 headers: {
@@ -33,40 +49,63 @@ export async function listTeams(accessToken: string): Promise<any[]> {
             });
 
             if (response.data.code === "Ok") {
-                return response.data.data;
+                const structure = getSubdomainStructure(uaSocket, endpointId);
+                
+                await request(uaSocket, "getBrowserConfig", {}, "ide-service", endpointId);
+
+                const subDomainStructure = await structure;
+
+                const enrichedData = response.data.data.map((workspace: any) => ({
+                    ...workspace,
+                    subDomainStructure
+                }));
+
+                workspaceMap[team.id] = enrichedData;
+                endpointId++;
             } else {
                 throw new Error(`Fehler beim Abrufen der Workspaces für Team ${team.id}: ${response.data.errMessage}`);
             }
-        });
-
-        const workspaceArrays = await Promise.all(workspacePromises);
-
-        const workspaceMap: { [teamId: string]: Array<any> } = {};
-        teams.forEach((team, index) => {
-            workspaceMap[team.id] = workspaceArrays[index];
-        });
-
+        }
         return workspaceMap;
     } catch (error) {
         throw new Error(`Fehler beim Abrufen der Workspaces: ${error}`);
     }
 }
 
-// Diese Funktion sendet einen POST-Request an die API, um die Benutzerdaten abzurufen
-export async function getUserData(accessToken: string): Promise<any[]> {
+
+export async function getUserData(accessToken: string, instanceURL: string): Promise<any> {
     try {
-        const response = await axios.post('https://codesphere.com/auth-service/getUser', {}, {
+        const userResponse = await axios.post(`${instanceURL}/auth-service/getUser`, {}, {
             headers: {
                 Authorization: `Bearer ${accessToken}`
             }
         });
 
-        if (response.data.code === "Ok") {
-            return response.data.data;
-        } else {
-            throw new Error(`Fehler beim Abrufen des Users: ${response.data.errMessage}`);
+        if (userResponse.data.code !== "Ok") {
+            throw new Error(`Fehler beim Abrufen des Users: ${userResponse.data.errMessage}`);
         }
+
+        let userData = userResponse.data.data;
+
+        const avatarResponse = await axios.post(`${instanceURL}/auth-service/getAvatarURL`, [userData.userId], {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+
+        if (avatarResponse.data.code !== "Ok") {
+            throw new Error(`Fehler beim Abrufen des Avatars: ${avatarResponse.data.errMessage}`);
+        }
+
+
+        userData = {
+            ...userData,
+            avatarURL: avatarResponse.data.data[0]
+        };
+
+
+        return userData;
     } catch (error) {
-        throw new Error(`Fehler beim Abrufen der User: ${error}`);
+        throw new Error(`Fehler beim Abrufen der Userdaten: ${error}`);
     }
 }

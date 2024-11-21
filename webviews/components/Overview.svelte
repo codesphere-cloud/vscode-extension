@@ -21,6 +21,15 @@
     let runStageSuccess = '';
     let pullState = false;
     let pushState = false;
+    let codesphereURL;
+
+    function getInstanceURL() {
+        vscode.postMessage({
+            type: 'getInstanceURL',
+            value: {
+            }
+        });
+    }
 
     function openCiPanel () {
         vscode.postMessage({
@@ -42,8 +51,10 @@
     }
 
     // function to create the deployment URL for the workspace
-    function createWorkspaceURL(dcId, wsId) {
-        workspaceURL = `https://${wsId}-3000.${dcId}.codesphere.com`
+    // TODO: instead of contructing the workspaceURL here, you can fetch it instead of globalStorage
+    // there might be connected a domain to a workspace, so if this is the case use the domain instead of base subdomain
+    function createWorkspaceURL(subDomainStructure, wsId) {
+        workspaceURL = `https://${wsId}-3000.${subDomainStructure}`
     }
 
     // funtion to set up the vscode server on Codesphere if it is not already running
@@ -181,7 +192,6 @@
     }
 
     function gitPull(workspaceId, dscId) {
-        console.log('gitPull')
         vscode.postMessage({
             type: 'gitPull',
             value: {
@@ -210,7 +220,7 @@
                 case 'overviewData':
                     overviewData = message.value;
                     activateWorkspace(overviewData.workspace.id, overviewData.workspace.dataCenterId);
-                    createWorkspaceURL(overviewData.workspace.dataCenterId, overviewData.workspace.id);
+                    createWorkspaceURL(overviewData.workspace.subDomainStructure, overviewData.workspace.id);
                     getconnectedWorkspace();
                     break;
                 case 'resourcesDeployed':
@@ -234,11 +244,7 @@
                     creatingTunnel = false;
                     break;
                 case 'connectedWorkspace':
-                    console.log(`is it connected?1${message.value}`)
-                    console.log(`is it connected?2${overviewData.workspace.id}`)
-                    console.log(`is it connected?3${parseInt(message.value) === overviewData.workspace.id}`)
                     if (parseInt(message.value) === parseInt(overviewData.workspace.id)) {
-                        console.log(`is it connected? ${message.value === overviewData.workspace.id}`)
                         connectedWorkspace = true;
                         vscode.postMessage({
                             type: 'getActiveWorkspaces',
@@ -248,7 +254,6 @@
                     }
                     break;
                 case 'activeWorkspaces':
-                    console.log(JSON.stringify(message.value) + ' tests123')                    
                     if (message.value[overviewData.workspace.id]) {
                         activeWorkspace = true;
                     }
@@ -293,6 +298,9 @@
                 case 'gitPush':
                     pushState = false;
                     break;
+                case 'getInstanceURL':
+                    codesphereURL = message.value;
+                    break;
             }   
         });
     });
@@ -303,6 +311,7 @@
     onMount(testAccessToken);
     onMount(getconnectedWorkspace);
     onMount(createWorkspaceURL);
+    onMount(getInstanceURL);
 </script>
 
 <style>

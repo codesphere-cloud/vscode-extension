@@ -146,9 +146,6 @@
 
                 case 'CIPipelineStages':
                     CIArray = JSON.parse(message.value.CIArray);
-                    console.log(CIArray.prepare);
-                    console.log(CIArray.test);
-                    console.log(CIArray.run);
                     prepareStageSteps = CIArray.prepare.steps;
                     testStageSteps = CIArray.test.steps;
                     runStageSteps = CIArray.run.steps;

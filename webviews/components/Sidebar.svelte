@@ -1,11 +1,15 @@
-<script lang="ts">
+<script>
     import { onMount } from "svelte";
-    import "vscode-webview"
     import * as vscode from "vscode";
+    import "vscode-webview"
+    
 
     let email = '';
     let password = '';
-    let errorMessage = ''; // Anfangs leer
+    let errorMessage = ''; 
+    let codesphereURL = "";
+    let changeInstanceURL = "";
+    let showURLModal = false;
 
 
     function handleSignIn() {
@@ -17,8 +21,37 @@
         });
     }
 
+    function getInstanceURL() {
+        vscode.postMessage({
+            type: 'getInstanceURL',
+            value: {
+            }
+        });
+    }
+
+    function updateInstanceURL() {
+        vscode.postMessage({
+            type: 'updateInstanceURL',
+            value: {
+                url: changeInstanceURL
+            }
+        });
+        showURLModal = false;
+    }
+
+    function toggleModal() {
+        showURLModal = !showURLModal;
+    }
+
+    function openURLModal() {
+        showURLModal = true;
+    }
+
+    function closeURLModal() {
+        showURLModal = false;
+    }
+
     onMount(() => {
-        console.log('live')
         window.addEventListener('message', event => {
             const message = event.data; // The JSON data our extension sent
             switch (message.type) {
@@ -29,8 +62,16 @@
                         errorMessage = message.value
                     }
                     break;
+                
+                case 'getInstanceURL':
+                    codesphereURL = message.value;
+                    break;
+                case 'updateInstanceURL':
+                    getInstanceURL()
+                    break;
             }
         });
+        getInstanceURL();
     });
 
     
@@ -115,11 +156,12 @@
 }
 
 .email-container,
-    .password-container {
-        position: relative;
-        width: 100%;
-        margin-bottom: 10px;
-    }
+.password-container,
+.instance-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 10px;
+}
 
     .icon-left {
         position: absolute;
@@ -141,6 +183,20 @@
         border: 1px solid var(--vscode-input-border);
     }
 
+    .instance-container,
+    .modal-button {
+        display: flex;
+        align-items: center;
+    }
+
+    .instance-input {
+        flex: 1;
+        padding: 12px 0px 12px 40px; 
+        border-radius: 4px;
+        border: 1px solid var(--vscode-input-border);
+        line-height: 1.5;
+    }
+
     .title {
         max-width: 400px;
         display: flex;
@@ -151,17 +207,69 @@
         border-radius: 4px;
         padding-top: 12px;
         padding-bottom: 12px;
+        font-size: 16px;
     }
 
     #signin-commit-button:hover {
-        opacity: 80%;
+        opacity: 90%;
+    }
+
+    #instance-commit-button {
+        border-radius: 4px;
+    }
+
+    #instance-commit-button:hover {
+        opacity: 90%;
     }
 
     .oauth-inner {
         display: flex;
         justify-content: center;
         align-items: center;
-    }   
+    }
+
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .modal {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        border-radius: 8px;
+        width: full;
+        text-align: center;
+    }
+    .url-input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+    } 
+    
+    .modal-button {
+        align-items: start;
+        gap: 10px;
+    }
+
+    .change-btn,
+    .close-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 12px; 
+        border-radius: 4px;
+        color: white;
+        cursor: pointer; 
+        font-size: 16px;
+        line-height: 1.5;
+    }
 
 </style>
 
@@ -278,9 +386,34 @@
     <button type="submit" id="signin-commit-button" class="btn" on:click={handleSignIn}>
         Sign in
     </button>
+    <button id="signin-commit-button" class="btn" on:click={toggleModal}>
+        Change Instance URL
+    </button>
+    {#if showURLModal}
+        <div on:click={closeURLModal} role="presentation">
+            <div class="modal" on:click|stopPropagation role="presentation">
+                <div class="modal-button">
+                    <div class="instance-container">
+                        <i class="icon-left">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                            </svg>                              
+                            
+                        </i>
+                        <input type="text" placeholder="https://codesphere.com" class="instance-input" bind:value={changeInstanceURL}/>
+                    </div>
+                    <div class="modal-button">
+                        <button class="btn change-btn" id="instance-commit-button" on:click={updateInstanceURL}>Change</button>
+                        <button class="btn close-btn" id="instance-commit-button" on:click={closeURLModal}>Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
     <div class="link-container">
-        <a class="reset-password" href="https://codesphere.com/ide/signin">Forgot your password?</a>
+        <a class="reset-password" href={`${codesphereURL}/ide/signin`}>Forgot your password?</a>
     </div>
     <p id="Errormessage" class="Errormessage" >{errorMessage}</p>
+    <p>{codesphereURL}</p>
 </div>
 

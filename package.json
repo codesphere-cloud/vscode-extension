@@ -2,7 +2,7 @@
   "name": "codesphere",
   "displayName": "Codesphere",
   "description": "Connect VS Code to your Codesphere workspaces",
-  "version": "0.1.7",
+  "version": "0.1.11",
   "icon": "media/Codesphere.png",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
   ],
   "pricing": "Free",
   "activationEvents": [
-    "*"
+    "onStartupFinished"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -62,7 +62,7 @@
           "type": "webview",
           "id": "codesphere-sidebar",
           "name": "Codesphere",
-          "icon": "media/Codesphere.svg",
+          "icon": "media/codesphere.svg",
           "contextualTitle": "Codesphere"
         }
       ],
@@ -185,8 +185,10 @@
     "@vscode/vsce": "^2.26.1",
     "ansi-to-html": "^0.7.2",
     "axios": "^1.6.8",
+    "bufferutil": "^4.0.8",
     "exec-sh": "^0.4.0",
     "merge": "^2.1.1",
-    "n": "^9.2.1"
+    "n": "^9.2.1",
+    "utf-8-validate": "^6.0.5"
   }
 }

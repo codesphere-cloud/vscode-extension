@@ -8,7 +8,7 @@ let dsSocket: any;
 let uaSocket: any;
 
 
-const setupWs = (ws: any, name: string, accessToken: undefined, cache:any, workspaceID: string) => {
+const setupWs = (ws: any, name: string, accessToken: undefined, cache?:any, workspaceID?: string) => {
     let reconnectAttempts = 0;
     const RECONNECT_ATTEMPTS = 10000;
     const RECONNECT_DELAY = 5000;
@@ -38,10 +38,9 @@ const setupWs = (ws: any, name: string, accessToken: undefined, cache:any, works
         console.log(name + ' websocket opened successfully');
 
         if (name === "workspace-proxy") {
-            uaSocket = ws;  // Update the reference to the current WebSocket for "user-activity"
+            uaSocket = ws;  
           }
 
-        // send authentication message to authenticate the websocket
         ws.send(JSON.stringify({
             method: "setClientContext",
             endpointId: 1,
@@ -55,10 +54,9 @@ const setupWs = (ws: any, name: string, accessToken: undefined, cache:any, works
         }));
 
         if (name === "deployment-service") {
-            uaSocket = ws;  // Update the reference to the current WebSocket for "user-activity"
+            uaSocket = ws;  
           }
 
-        // send authentication message to authenticate the websocket
         ws.send(JSON.stringify({
             method: "setClientContext",
             endpointId: 1,
@@ -72,10 +70,9 @@ const setupWs = (ws: any, name: string, accessToken: undefined, cache:any, works
         }));
 
         if (name === "ide-service") {
-            uaSocket = ws;  // Update the reference to the current WebSocket for "user-activity"
+            uaSocket = ws;  
           }
 
-        // send authentication message to authenticate the websocket
         ws.send(JSON.stringify({
             method: "setClientContext",
             endpointId: 1,
@@ -144,7 +141,6 @@ const request = (ws: any, method: any, args: any, name: any, wsId: any) => {
 
 const waitForWorkspaceRunning = async (deploymentSocket: any, cache: any, workspaceID: any) => {
     return new Promise((resolve, reject) => {
-        // Handler für Nachrichten
         const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes("and use code")) {
@@ -153,20 +149,17 @@ const waitForWorkspaceRunning = async (deploymentSocket: any, cache: any, worksp
                 if (codeMatch && codeMatch.length > 1) {
                     const extractedCode = codeMatch[1];
                     cache.update(`codesphere.lastCode${workspaceID}`, extractedCode);
-                    // Wenn der Code extrahiert wurde, erfülle die Promise und entferne den Handler
                     resolve(extractedCode);
-                    deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
+                    deploymentSocket.off("message", nexLogHandler); 
                 }
             }
         };
 
-        // Handler für Fehler
         const errorHandler = (err: any) => {
             console.log("Socket exited with error:" + err);
             reject(err);
         };
 
-        // Hinzufügen von Nachrichten- und Fehlerhandlern
         deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
@@ -174,30 +167,27 @@ const waitForWorkspaceRunning = async (deploymentSocket: any, cache: any, worksp
 
 const doesTunnelAlreadyExist = async (deploymentSocket: any, cache: any, workspaceID: any) => { 
     return new Promise((resolve, reject) => {
-        // Handler für Nachrichten
         const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes("How would you like to log in to Visual Studio Code?")) {
                 resolve('not found');
-                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
+                deploymentSocket.off("message", nexLogHandler); 
             }
             if (msgTest.includes("Connected to an existing tunnel process running on this machine.")) {
                 resolve('found');
-                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
+                deploymentSocket.off("message", nexLogHandler); 
             }
             if (msgTest.includes("Open this link in your browser")) {
                 resolve('found-nopid');
-                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
+                deploymentSocket.off("message", nexLogHandler); 
             }
         };
 
-        // Handler für Fehler
         const errorHandler = (err: any) => {
             console.log("Socket exited with error:" + err);
             reject(err);
         };
 
-        // Hinzufügen von Nachrichten- und Fehlerhandlern
         deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
@@ -208,16 +198,14 @@ const giveWorkspaceName = async (deploymentSocket: any) => {
         const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes("What would you like to call this machine?")) {
-                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
-                resolve(); // Kein Argument erforderlich
+                deploymentSocket.off("message", nexLogHandler); 
+                resolve(); 
             }
         };
-        // Handler für Fehler
         const errorHandler = (err: any) => {
             console.log("Socket exited with error:" + err);
             reject(err);
         };
-        // Hinzufügen von Nachrichten- und Fehlerhandlern
         deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
@@ -228,16 +216,14 @@ const serverIsUp = async (deploymentSocket: any, cache: any, workspaceName:any, 
         const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes(`Creating tunnel with the name: ${workspaceName}`)) {
-                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
-                resolve(); // Kein Argument erforderlich
+                deploymentSocket.off("message", nexLogHandler); 
+                resolve(); 
             }
         };
-        // Handler für Fehler
         const errorHandler = (err: any) => {
             console.log("Socket exited with error:" + err);
             reject(err);
         };
-        // Hinzufügen von Nachrichten- und Fehlerhandlern
         deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
@@ -248,16 +234,14 @@ const afterTunnelInit = async (deploymentSocket: any, workspaceName: any) => {
         const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes(`Open this link in your browser https://vscode.dev/tunnel/${workspaceName}/home/user/app`)) {
-                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
-                resolve(); // Kein Argument erforderlich
+                deploymentSocket.off("message", nexLogHandler); 
+                resolve(); 
             }
         };
-        // Handler für Fehler
         const errorHandler = (err: any): void => {
             console.log("Socket exited with error:" + err);
             reject(err);
         };
-        // Hinzufügen von Nachrichten- und Fehlerhandlern
         deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
@@ -268,16 +252,15 @@ const tunnelIsReady = async (deploymentSocket: any) => {
         const nexLogHandler = (msg: any) => {
             const msgTest = msg.toString();
             if (msgTest.includes(`Extension install complete`)) {
-                deploymentSocket.off("message", nexLogHandler); // Entferne den Handler für zukünftige Nachrichten
-                resolve(); // Kein Argument erforderlich
+                deploymentSocket.off("message", nexLogHandler); 
+                resolve(); 
             }
         };
-        // Handler für Fehler
+        
         const errorHandler = (err: any): void => {
             console.log("Socket exited with error:" + err);
             reject(err);
         };
-        // Hinzufügen von Nachrichten- und Fehlerhandlern
         deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
@@ -319,7 +302,6 @@ const getPidFromServer = async (deploymentSocket: any) => {
                     const pidMatch = msgTest.match(pidRegex);
                     if (pidMatch && pidMatch.length > 1) {
                         const extractedPid = pidMatch[1];
-                        console.log("Extracted PID: " + extractedPid);
                         resolve(extractedPid);
                         deploymentSocket.off("message", nexLogHandler);
                     }
@@ -402,7 +384,6 @@ const checkCiPipelineState = async (deploymentSocket: any, endpointId: number) =
                 let parsedMsg = JSON.parse(msgTest);
 
                 if (msgTest.includes(`"endpointId":${endpointId}`)) {
-                    console.log(`tests14` + msgTest)
                     deploymentSocket.off("message", nexLogHandler);
                     deploymentSocket.off("error", errorHandler);
                     resolve(parsedMsg.reply);
@@ -522,7 +503,6 @@ const checkCiPipelineStructure = async (deploymentSocket: any, endpointId: numbe
                 let parsedMsg = JSON.parse(msgTest);
 
                 if (msgTest.includes(`"endpointId":${endpointId}`)) {
-                    console.log(`ci-Structure` + msgTest)
                     deploymentSocket.off("message", nexLogHandler);
                     deploymentSocket.off("error", errorHandler);
                     resolve(parsedMsg.reply);
@@ -596,7 +576,6 @@ const ciStageStatusHandler = async (deploymentSocket: any, endpointId: number, p
                 let parsedMsg = JSON.parse(msgTest);
 
                 if (msgTest.includes(`"endpointId":${endpointId}`)) {
-                    // ci-pipeline has finished successfully
                     if (parsedMsg.reply.state === "success") {
                         
                         deploymentSocket.off("message", ciStageStatus);
@@ -615,7 +594,6 @@ const ciStageStatusHandler = async (deploymentSocket: any, endpointId: number, p
                         }
                         resolve('success');
                     }
-                    // ci-pipeline has failed
                     if (parsedMsg.reply.state === "failure" || parsedMsg.reply.state === 'aborted') {
                         deploymentSocket.off("message", ciStageStatus);
                         deploymentSocket.off("error", errorHandler);
@@ -634,8 +612,6 @@ const ciStageStatusHandler = async (deploymentSocket: any, endpointId: number, p
                         }
                         resolve('failure');
                     }
-                    // ci-pipeline is still running
-                    // return the state of each step, so the UI can be updated
                     if (parsedMsg.reply.state === "running") {
                         
                         postMessage('updateCiStageStatus', {status: parsedMsg.reply.steps, stage: stage, state: parsedMsg.reply.state} );
@@ -655,6 +631,34 @@ const ciStageStatusHandler = async (deploymentSocket: any, endpointId: number, p
         
         
         deploymentSocket.on("message", ciStageStatus);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
+const getSubdomainStructure = async (deploymentSocket: any, endpointId: any) => {
+    return new Promise((resolve, reject) => {
+        const nexLogHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+                if (msgTest.includes(`"endpointId":${endpointId}`)) {
+                    let workspaceHostingBaseDomain = parsedMsg.reply.data.workspaceHostingBaseDomain;
+                    resolve(workspaceHostingBaseDomain);
+                    deploymentSocket.off("message", nexLogHandler);
+                }
+                
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", nexLogHandler);
         deploymentSocket.on("error", errorHandler);
     });
 };
@@ -683,6 +687,7 @@ module.exports = {
     checkCiPipelineStructure,
     ciStepHandler,
     ciStageStatusHandler,
+    getSubdomainStructure,
     getUaSocket: () => uaSocket,
     getDsSocket: () => dsSocket
 };

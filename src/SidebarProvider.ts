@@ -27,7 +27,7 @@ import { exec } from 'child_process';
 
 const extension_package = require('../package.json');
 const version = extension_package.version;
-// Definiere den Pfad zur VSIX-Datei
+// Thats the name of the vsix file for developement
 const vsixFile = 'codesphere-'+version+'.vsix';
 
 
@@ -43,9 +43,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     let cache = this.extensionContext.globalState;
 
     webviewView.webview.options = {
-      // Allow scripts in the webview
       enableScripts: true,
-
       localResourceRoots: [this._extensionUri],
     };
 
@@ -77,20 +75,19 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       let matchingObject = null;
 
       for (const teamId in workspacesInTeam) {
-        const workspaces = workspacesInTeam[teamId]; // Hole die Liste der Arbeitsbereiche für das Team
+        const workspaces = workspacesInTeam[teamId]; 
         for (const workspace of workspaces) {
           if (parseInt(workspace.id) === currentWorkspace) {
             matchingObject = workspace;
-            break; // Verlasse die Schleife, sobald ein Treffer gefunden wurde
+            break; 
           }
         }
         if (matchingObject) {
-          break; // Verlasse die äußere Schleife, sobald ein Treffer gefunden wurde
+          break; 
         }
       }
       cache.update("codesphere.currentconnectedWorkspace", matchingObject);
 
-      // Check if the workspace exists before using it
       if (matchingObject) {
         this._view?.webview.postMessage({
           type: "overviewData",
@@ -134,6 +131,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       cache.update("codesphere.workspaceOverview", '');
     }
 
+    if (!cache.get("codesphere.instanceURL")) {
+      cache.update("codesphere.instanceURL", 'https://codesphere.com');
+    }
+
     cache.setKeysForSync(["codesphere.isLoggedIn", 
                           "codesphere.accessTokenCache", 
                           "codesphere.teams", 
@@ -142,7 +143,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                           "codesphere.lastCode", 
                           "codesphere.activeTunnel",
                           "codesphere.currentWorkspace",
-                          "codesphere.workspaceOverview"]);
+                          "codesphere.workspaceOverview",
+                          "codesphere.instanceURL"]);
+
+    let instanceURL: string = cache.get("codesphere.instanceURL") as string;
+    instanceURL = instanceURL.replace(/^https?:\/\//, '');
+    instanceURL = instanceURL.replace(/\/$/, '');
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
       let socket: any;
@@ -153,21 +159,31 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       switch (data.type) {
         case "testConnection": {
           try {
-              const response = await axios.post('https://codesphere.com/team-service/listTeams', {}, {
+              const accessToken = await cache.get("codesphere.accessTokenCache") as string;
+              instanceURL = cache.get("codesphere.instanceURL") as string;
+              instanceURL = instanceURL.replace(/^https?:\/\//, '');
+              instanceURL = instanceURL.replace(/\/$/, '');
+              
+              const url = `https://${instanceURL}/team-service/listTeams`;
+              
+              const response = await axios.post(url, {}, {
                   headers: {
-                      Authorization: `Bearer ${cache.get("codesphere.accessTokenCache")}`
-                  }
+                      Authorization: `Bearer ${accessToken}`
+                  },
+                  timeout: 5000
               });
+
               if (response.data.code === "Ok") {
                   console.log("Token is valid");
               } else {
+                  console.log(`Fehler bei testConnection: ${response.data}`);
                   webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-                  console.log('Token is invalid');
-                  throw new Error(`Fehler beim Abrufen der Teams: ${response.data.errMessage}`);
+                  console.log('Token is invalid1');
+                  throw new Error(`Fehler beim Abrufen der Teams: ${response.data}`);
               }
           } catch (error) {
             webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-            console.log('Token is invalid');
+            console.log('Token is invalid2');
 
               throw new Error(`Fehler beim Abrufen der Teams: ${error}`);
           }
@@ -180,7 +196,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }          
           const workspaceId = data.value.workspaceId;
           const workspaceName = data.value.workspaceName;
-          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
+          const socketURL = `wss://${data.value.datacenterId}.${instanceURL}/workspace-proxy`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
           const teamId = data.value.teamId;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
@@ -189,7 +205,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
           await request(uaSocket, "terminalSessionsStream", { workspaceId: workspaceId }, "terminalSessionsStream", 2);
 
-          // Warte auf die Antwort des vorherigen Requests und extrahiere den tmuxSessionName
           const terminalSessionsResponse = await request(uaSocket, "createTmuxSession", { workspaceId: workspaceId }, "workspace-proxy", 3);
           const tmuxSessionName = terminalSessionsResponse.data.name;
 
@@ -307,7 +322,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           
           isVSIXWorkspace.then((vsixState: boolean) => {
             workspaceDev = vsixState;
-            console.log('workspaceDev', workspaceDev);
             delay(100);
             if (!workspaceDev) {
                 request(uaSocket, "terminalStream", { method: "data", data: "./.codesphere-internal/code tunnel --install-extension Codesphere.codesphere" +"\r"}, "workspace-proxy", 4);
@@ -418,7 +432,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }
           const workspaceId = data.value.workspaceId;
           const workspaceName = data.value.workspaceName;
-          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
+          const socketURL = `wss://${data.value.datacenterId}.${instanceURL}/workspace-proxy`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
           const teamId = data.value.teamId;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
@@ -482,7 +496,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
           }
         
-        // Verwendung der Funktion signIn
         case "startCiStage": {
           if (!data.value) {
             return;
@@ -491,7 +504,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const workspaceId = data.value.workspaceId;
           const stage = data.value.stage;
 
-          const socketURL = `wss://${data.value.dcId}.codesphere.com/workspace-proxy`;
+          const socketURL = `wss://${data.value.dcId}.${instanceURL}/workspace-proxy`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
 
@@ -515,20 +528,42 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
 
         }
+
+        case "getInstanceURL": {
+          if (!data.value) {
+            return;
+          }
+          let instanceURL = cache.get("codesphere.instanceURL");
+          this._view?.webview.postMessage({ type: "getInstanceURL", value: instanceURL });
+          break;
+        }
+
+        case "updateInstanceURL": {
+          if (!data.value) {
+            return;
+          }
+          let url = data.value.url;
+          await cache.update("codesphere.instanceURL", url);
+          this._view?.webview.postMessage({ type: "updateInstanceURL"});
+
+          break;
+        }
+        
         case "signin": {
           if (!data.value) {
               return;
           }
       
           try {
-              const sessionId = await signIn(data.value.email, data.value.password);
+            const instanceURL = cache.get("codesphere.instanceURL");
+              const sessionId = await signIn(data.value.email, data.value.password, instanceURL as string);
       
               await this.extensionContext.secrets.store("codesphere.sessionId", sessionId as string);
       
               const storedSessionId = await this.extensionContext.secrets.get("codesphere.sessionId");
-      
+
               const accessToken = await new Promise<string>((resolve, reject) => {
-                  genAccessToken(storedSessionId as string, (error: Error | null, accessToken?: string) => {
+                  genAccessToken(storedSessionId as string, instanceURL as string, (error: Error | null, accessToken?: string) => {
                       if (error) {
                           return reject(error);
                       }
@@ -541,14 +576,17 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       
               await this.extensionContext.secrets.store("codesphere.accessToken", accessToken);
               cache.update("codesphere.accessTokenCache", accessToken);
-      
-              console.log('accessTokentesti', accessToken);
-      
-              await reloadCache(accessToken, (error, teams, workspaces, userData) => {
+                    
+              // TODO: replace this call to the onMount function in webview to ensure, that all data get fetched when open the webview
+              // right now the data might be in an old state when opening the webview when already signed in
+              await reloadCache(accessToken, instanceURL as string, (error, teams, workspaces, userData) => {
                 if (error) {
                   vscode.window.showErrorMessage('An error occurred while reloading cache: ' + error.message);
                   return;
                 }
+                // TODO: add connected domain of workspace if exists
+                // domain must be fetched from /deployment-service websocket method: listDomainsByTeams
+                // and then added to the right workspace object
                 cache.update("codesphere.workspaces", workspaces);
                 cache.update("codesphere.userData", userData);
                 cache.update("codesphere.teams", teams);
@@ -580,7 +618,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                       return;
                   }
       
-                  console.log(`stdout: ${stdout}`);
               });
       
               exec(gitBashName, (error, stdout, stderr) => {
@@ -594,7 +631,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                       return;
                   }
       
-                  console.log(`stdout: ${stdout}`);
               });
       
               webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
@@ -643,7 +679,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         case "activateWorkspace": {
           // wakes up sleeping on-demand workspaces when open workspace accordion in the UI
           const workspaceId = data.value.workspaceId;
-          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/deployment-service`;
+          const socketURL = `wss://${data.value.datacenterId}.${instanceURL}/deployment-service`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "deployment-service", accessToken, cache, workspaceId);
           uaSocket2 = getUaSocket();
@@ -727,7 +763,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           if (!data.value) {
             return;
           }
-          // todo: check wether it is mandatory to erease the currentWorkspace context. I dont think so but at the moment i dont want to destroy anything
           webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
           vscode.commands.executeCommand('setContext', 'codesphere.currentWorkspace', "");
           vscode.commands.executeCommand('setContext', 'codesphere.workspaceOverview', '');
@@ -747,7 +782,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }
           const delay = (ms: any) => new Promise(resolve => setTimeout(resolve, ms));
           const workspaceId = data.value.workspaceId;
-          const socketURL = `wss://${data.value.datacenterId}.codesphere.com/workspace-proxy`;
+          const socketURL = `wss://${data.value.datacenterId}.${instanceURL}/workspace-proxy`;
           const accessToken = cache.get("codesphere.accessTokenCache");
           socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
           let uaSocketconnect2 = getUaSocket();
@@ -802,8 +837,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         //   vscode.commands.executeCommand('remote-explorer.signIntoTunnelGithub', 'hello-react');
         //   const accessToken = cache.get("codesphere.accessTokenCache");
         //   const workspaceId = data.value.workspaceId;
-        //   const socketURLPull = `wss://${data.value.dataCenterId}.codesphere.com/workspace-proxy`;
-        //   const socketURLGitHubToken = `wss://${data.value.dataCenterId}.codesphere.com/ide-service`;
+        //   const socketURLPull = `wss://${data.value.dataCenterId}.${instanceURL}/workspace-proxy`;
+        //   const socketURLGitHubToken = `wss://${data.value.dataCenterId}.${instanceURL}/ide-service`;
         //   const delay = (ms: any) => new Promise(resolve => setTimeout(resolve, ms));
 
         //   // generate gitHub accessToken
