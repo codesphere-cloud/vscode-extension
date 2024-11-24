@@ -55,7 +55,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     
       }
   
-    if (cache.get("codesphere.isLoggedIn") === true) {
+    if (cache.get("codesphere.isLoggedIn") === true && cache.get('codesphere.currentWorkspace') === '') {
       vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
       cache.update("codesphere.isLoggedIn", true);
       webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);

@@ -29,7 +29,12 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 		"codesphere-sidebar",
-		sidebarProvider
+		sidebarProvider,
+		{
+			webviewOptions: {
+				retainContextWhenHidden: true
+			}
+		}
 		)
 	);
 
