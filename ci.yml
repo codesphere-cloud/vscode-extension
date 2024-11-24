@@ -7,7 +7,7 @@ prepare:
     - name: Change node version
       command: sudo -u admin n 18.18.0   
     - name: Install Dependencies
-      command: npm install @vscode/vsce
+      command: npm i
     - name: Compile project
       command: npm run compile      
     - name: bundle project

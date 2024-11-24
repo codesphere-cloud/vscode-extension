@@ -58,6 +58,7 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
                 const ciPipelineCheck = checkCiPipelineStructure(uaSocket, 324);
                 ciPipelineCheck.then((ci: any) => {
                     ciStructure = ci;
+                    console.log("ciStructure: ", JSON.stringify(ciStructure));
                     this._view?.webview.postMessage({ 
                         type: "CIPipelineStages", 
                         value: {   
