@@ -45,21 +45,30 @@
                 }
                 step.open = false
             });
-            prepareStageSteps[0].open = true;
+
+            if (stagelength > 0) {
+                prepareStageSteps[0].open = true
+            }
         }
         if (stage == "test") {
             stageRunning = [...stageRunning, stage]
             testStageSate = true;
             testStageSuccess = '';
             stagelength = testStageSteps.length
-            testStageSteps[0].open = true
+
+            if (stagelength > 0) {
+                testStageSteps[0].open = true
+            }
         }
         if (stage == "run") {
             stageRunning = [...stageRunning, stage]
             runStageSate = true;
             runStageSuccess = '';
             stagelength = runStageSteps.length
-            runStageSteps[0].open = true
+
+            if (stagelength > 0) {
+                runStageSteps[0].open = true
+            }
         }
         vscode.postMessage({
             type: 'startCiStage',
@@ -120,6 +129,10 @@
                     currentWorkspace = message.value.currentWorkspace;
                     teamId = message.value.teamId;
                     dcId = message.value.dcId;
+
+                    console.log("currentWorkspace", currentWorkspace);
+                    console.log("teamId", teamId);
+                    console.log("dcId", dcId);
                     
                     vscode.postMessage({
                         type: 'getCiPipelineStages',
@@ -174,6 +187,7 @@
                     break;
                 case 'ciPipelineStatus':
                     if (message.value.dynamic) {
+                        console.log("dynamic", message.value.dynamic);
                         switch (message.value.dynamic) {
                             case 'prepare':
                                 prepareStageSuccess = message.value.prepare.state;
@@ -182,6 +196,8 @@
                                 });
                                 if (prepareStageSuccess === 'running') {
                                     prepareStageSate = true;
+                                    stageRunning = [...stageRunning, 'prepare']
+
                                 }
                                 if (prepareStageSuccess === 'success' || prepareStageSuccess === 'failure') {
                                     prepareStageSate = false;
@@ -194,6 +210,8 @@
                                 });
                                 if (testStageSuccess === 'running') {
                                     testStageSate = true;
+                                    stageRunning = [...stageRunning, 'test']
+
                                 }
                                 if (testStageSuccess === 'success' || testStageSuccess === 'failure') {
                                     testStageSate = false;
@@ -206,6 +224,7 @@
                                 });
                                 if (runStageSuccess === 'running') {
                                     runStageSate = true;
+                                    stageRunning = [...stageRunning, 'run']
                                 }
                                 if (runStageSuccess === 'success' || runStageSuccess === 'failure') {
                                     runStageSate = false;
@@ -216,12 +235,15 @@
                     }
                     
                     if (message.value.dynamic === false && message.value.prepare.state){
+                        console.log("prepare dynamic false", message.value.prepare.state);
                         prepareStageSuccess = message.value.prepare.state;
                         prepareStageSteps.forEach(( step, index) => {
                             Object.assign(step, message.value.prepare.steps[index]);
                         });
                         if (prepareStageSuccess === 'running') {
                             prepareStageSate = true;
+                            stageRunning = [...stageRunning, 'prepare']
+
                         }
                         if (prepareStageSuccess === 'success' || prepareStageSuccess === 'failure') {
                             prepareStageSate = false;
@@ -229,12 +251,15 @@
                     }
 
                     if (message.value.dynamic === false && message.value.test.state){
+                        console.log("test dynamic false", message.value.test.state);
                         testStageSuccess = message.value.test.state;
                         testStageSteps.forEach(( step, index) => {
                             Object.assign(step, message.value.test.steps[index]);
                         });
                         if (testStageSuccess === 'running') {
                             testStageSate = true;
+                            stageRunning = [...stageRunning, 'test']
+
                         }
                         if (testStageSuccess === 'success' || testStageSuccess === 'failure') {
                             testStageSate = false;
@@ -242,12 +267,14 @@
                     }
 
                     if (message.value.dynamic === false && message.value.run.state){
+                        console.log("run dynamic false", message.value.run.state);
                         runStageSuccess = message.value.run.state;
                         runStageSteps.forEach(( step, index) => {
                             Object.assign(step, message.value.run.steps[index]);
                         });
                         if (runStageSuccess === 'running') {
                             runStageSate = true;
+                            stageRunning = [...stageRunning, 'run']
                         }
                         if (runStageSuccess === 'success' || runStageSuccess === 'failure') {
                             runStageSate = false;
