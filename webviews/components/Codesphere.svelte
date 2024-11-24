@@ -12,6 +12,7 @@
     let notDeployedWorkspaces = [];
     let indexOfWorkspace;
     let currentWorkspace;
+    let username;
 
     function openOverview(workspaceId, teamId) {
         vscode.postMessage({
@@ -93,6 +94,10 @@
                     break;
                 case 'getUserData':
                     user = JSON.parse(message.value);
+                    console.log("User: " , user);
+                    if (user.avatarURL === null) {
+                        username = getInitials(user);
+                    }
                     break;
                 case 'activeWorkspaces':
                     activeWorkspaces = message.value;
@@ -148,6 +153,26 @@
         const teamIndex = teamArray.findIndex(team => team.id === teamId);
         teamArray[teamIndex].open = !teamArray[teamIndex].open;
     }
+
+    function getInitials(user) {
+        console.log("User Names: ", user.firstName, user.lastName, user.email);
+
+        if (user.firstName && user.lastName) {
+            return user.firstName[0].toUpperCase() + user.lastName[0].toUpperCase();
+        }
+
+        if (user.firstName) {
+            return user.firstName[0].toUpperCase();
+        }
+
+        if (user.lastName) {
+            return user.lastName[0].toUpperCase();
+        }
+
+        if (user.email) {
+            return user.email[0].toUpperCase();
+        }
+    }
     
 </script>
 
@@ -200,6 +225,17 @@
         height: 32px;
         border-radius: 50%;
         object-fit: cover;
+        display: flex; 
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem; 
+        font-weight: bold;
+        color: white; 
+        text-transform: uppercase; 
+    }
+
+    .defaultAvatar {
+        background-color: #80808026; 
     }
 
     .workspace {
@@ -270,7 +306,13 @@
 <div>
     <div class="userInfo">
         <h2>Your Teams</h2>
-        <img src={user.avatarURL} alt="User Avatar" class="userAvatar">
+        {#if user.avatarURL}
+            <img src={user.avatarURL} alt="User Avatar" class="userAvatar">
+        {:else}
+            <div class="userAvatar defaultAvatar">
+                {username}
+            </div>
+        {/if}
     </div>
 
     {#each teamArray as team (team.id)}
