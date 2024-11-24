@@ -182,7 +182,7 @@
     "ws": "^8.16.0"
   },
   "dependencies": {
-    "@vscode/vsce": "^2.26.1",
+    "@vscode/vsce": "^2.32.0",
     "ansi-to-html": "^0.7.2",
     "axios": "^1.6.8",
     "bufferutil": "^4.0.8",

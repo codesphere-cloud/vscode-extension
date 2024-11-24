@@ -55,7 +55,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     
       }
   
-    if (cache.get("codesphere.isLoggedIn") === true) {
+    if (cache.get("codesphere.isLoggedIn") === true && cache.get('codesphere.currentWorkspace') === '') {
       vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
       cache.update("codesphere.isLoggedIn", true);
       webviewView.webview.html = this._getHtmlForWebviewAfterSignIn(webviewView.webview);
@@ -66,9 +66,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       vscode.commands.executeCommand('setContext', 'codesphere.isLoggedIn', true);
       cache.update("codesphere.isLoggedIn", true);
       webviewView.webview.html = this._getHtmlWebviewOverview(webviewView.webview);
-      cache.update('codesphere.workspaceOverview', cache.get('codesphere.currentWorkspace'));
-      vscode.commands.executeCommand('setContext', 'codesphere.workspaceOverview', cache.get('codesphere.currentWorkspace'));
-      console.log('Congratulations, your extension "codesphere" is now active! You are logged in.');
+      // todo: instead of passing just the workspace id we need to pass the whole workspace object
 
       let currentWorkspace = parseInt(cache.get('codesphere.currentWorkspace') as string);
       const workspacesInTeam: any = cache.get("codesphere.workspaces");
@@ -86,7 +84,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break; 
         }
       }
-      cache.update("codesphere.currentconnectedWorkspace", matchingObject);
+
+      console.log('matchingObject', matchingObject);
+      cache.update("codesphere.workspaceOverview", matchingObject);
 
       if (matchingObject) {
         this._view?.webview.postMessage({
@@ -96,6 +96,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           },
         });
       } 
+
+      // cache.update('codesphere.workspaceOverview', cache.get('codesphere.currentWorkspace'));
+      vscode.commands.executeCommand('setContext', 'codesphere.workspaceOverview', cache.get('codesphere.currentWorkspace'));
+      console.log('Congratulations, your extension "codesphere" is now active! You are logged in.');
     }
     
     if (!cache.get("codesphere.isLoggedIn")) {

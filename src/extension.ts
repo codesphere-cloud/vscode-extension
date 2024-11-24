@@ -25,14 +25,16 @@ export function activate(context: vscode.ExtensionContext) {
 	const fileTreeProvider = new FileTreeProvider(rootPath);
 	const ciPipelineProvider = new CiPipelineProvider(context.extensionUri, context);
 
-	//TODO: the line below disables vscode to remember the last opened windows.
-	// change it that it only disables it inside remote tunnels
-	vscode.workspace.getConfiguration('window').update('restoreWindows', 'none', vscode.ConfigurationTarget.Global);
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 		"codesphere-sidebar",
-		sidebarProvider
+		sidebarProvider,
+		{
+			webviewOptions: {
+				retainContextWhenHidden: true
+			}
+		}
 		)
 	);
 
@@ -100,7 +102,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 		if (workspaceId !== "" && workspaceId !== "$WORKSPACE_ID") {
 			const pwdUri = vscode.Uri.parse('home/user/app');
+			vscode.workspace.getConfiguration('window').update('restoreWindows', 'none', vscode.ConfigurationTarget.Global);
 			vscode.commands.executeCommand('vscode.openFolder', pwdUri);
+		} else {
+			vscode.workspace.getConfiguration('window').update('restoreWindows', 'all', vscode.ConfigurationTarget.Global);
 		}
 	});
 

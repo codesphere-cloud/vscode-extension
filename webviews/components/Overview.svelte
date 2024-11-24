@@ -561,7 +561,7 @@
         </div>
     {/if}
 
-    {#if activeWorkspace === true && workspaceDeployed === true && connectedWorkspace === false}
+    {#if activeWorkspace === true && workspaceDeployed === true}
         <div class="action-buttons">
             <a href='{workspaceURL}' class="openDeploymentButton">
                 <span>Open deployment</span>
@@ -580,12 +580,14 @@
                 </svg>
             </div>
         </div>
-        <div class="codeProvider">
-            <div class="codeProviderInside">
-                <p class="spaceForLink">Workspace is ready to connect</p>
-                <button on:click= {() => openTunnel(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId, overviewData.workspace.teamId)}>Connect</button>
+        {#if connectedWorkspace === false}
+            <div class="codeProvider">
+                <div class="codeProviderInside">
+                    <p class="spaceForLink">Workspace is ready to connect</p>
+                    <button on:click= {() => openTunnel(overviewData.workspace.id, overviewData.workspace.name, overviewData.workspace.dataCenterId, overviewData.workspace.teamId)}>Connect</button>
+                </div>
             </div>
-        </div>
+        {/if}
     {/if}
     
 </div>
