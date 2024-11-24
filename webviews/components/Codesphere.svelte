@@ -213,15 +213,22 @@
         color: white!important;
     }
 
-    .workspaceList {
+     .workspaceList {
         position: relative;
-        overflow-x: auto;
+       overflow-x: auto;
         white-space: nowrap;
         padding-left: 16px;
     }
 
-    .workspaceList:nth-child(2) {
+    .workspaceList:nth-child(1) {
         padding-top:8px
+    }
+
+    
+
+    .workspaceList {
+        scrollbar-width: none; 
+        -ms-overflow-style: none; 
     }
 
     .workspaceBox {
@@ -249,10 +256,12 @@
     }
 
     .height-indicator {
+        margin: 0;
+        margin-bottom: -8px;
         position: absolute;
         left: 8px;
         height: 100%;
-        border-left: .5px solid #80808026;;
+        border-left: 1.8px solid #80808026;
     }
 
 
