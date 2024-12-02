@@ -7,6 +7,7 @@ const { setupWs,
         request, 
         waitForWorkspaceRunning, 
         getUaSocket, 
+        getDsSocket,
         giveWorkspaceName,
         afterTunnelInit,
         tunnelIsReady,
@@ -686,7 +687,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           const socketURL = `wss://${data.value.datacenterId}.${instanceURL}/deployment-service`;
           const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
           socket = await setupWs(new wsLib.WebSocket(socketURL), "deployment-service", accessToken, cache, workspaceId);
-          uaSocket2 = getUaSocket();
+          uaSocket2 = getDsSocket();
 
           const codePromise = wakeUpWorkspace(uaSocket2);
           

@@ -6,6 +6,7 @@ const fs = require('fs');
 let wsSeq = 1;
 let dsSocket: any;
 let uaSocket: any;
+let wsSocket: any;
 
 
 const setupWs = (ws: any, name: string, accessToken: undefined, cache?:any, workspaceID?: string) => {
@@ -39,39 +40,19 @@ const setupWs = (ws: any, name: string, accessToken: undefined, cache?:any, work
 
         if (name === "workspace-proxy") {
             uaSocket = ws;  
-          }
-
-        ws.send(JSON.stringify({
-            method: "setClientContext",
-            endpointId: 1,
-            args: {
-                requestHeaders: {
-                    Authorization: `Bearer ${accessToken}`
-                },
-                responseHeaders: {},
-                httpStatusCode: 200
-            }
-        }));
-
+        }
+        
         if (name === "deployment-service") {
-            uaSocket = ws;  
-          }
-
-        ws.send(JSON.stringify({
-            method: "setClientContext",
-            endpointId: 1,
-            args: {
-                requestHeaders: {
-                    Authorization: `Bearer ${accessToken}`
-                },
-                responseHeaders: {},
-                httpStatusCode: 200
-            }
-        }));
+        dsSocket = ws;  
+        }
 
         if (name === "ide-service") {
             uaSocket = ws;  
-          }
+        }
+
+        if (name === "workspace-service") {
+            wsSocket = ws;
+        }
 
         ws.send(JSON.stringify({
             method: "setClientContext",
@@ -84,7 +65,6 @@ const setupWs = (ws: any, name: string, accessToken: undefined, cache?:any, work
                 httpStatusCode: 200
             }
         }));
-
     });
 
     ws.on("message", (data: { toString: () => any; }) => {
@@ -404,6 +384,71 @@ const checkCiPipelineState = async (deploymentSocket: any, endpointId: number) =
     });
 };
 
+const checkMSDCiPipelineState = async (deploymentSocket: any, endpointId: number, replicaCount: number, runStageServices: any) => {
+    return new Promise((resolve, reject) => {
+
+        let count = 0;
+
+        // all replicas are placed into the empty Array
+        Object.values(runStageServices).forEach((service: any) => {
+            service.replicas = [];
+        });
+        const nexLogHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+            
+                if (msgTest.includes(`"endpointId":${endpointId}`)) {
+                    if (parsedMsg.reply.server !== "codesphere-ide") {
+                        const serverName = parsedMsg.reply.server; 
+                        const hostname = parsedMsg.reply.hostname; 
+            
+                        if (runStageServices[serverName]) {
+                            if (typeof runStageServices[serverName].replicas !== "object" || Array.isArray(runStageServices[serverName].replicas)) {
+                                runStageServices[serverName].replicas = {};
+                            }
+            
+                            if (!runStageServices[serverName].replicas[hostname]) {
+                                runStageServices[serverName].replicas[hostname] = {}; 
+                            }
+            
+                            console.log(
+                                `Hostname ${hostname} wurde zu ${serverName}.replicas hinzugefügt.`
+                            );
+                            count++;
+                        } else {
+                            console.log(`Server ${serverName} existiert nicht in runStageServices.`);
+                        }
+                    }
+                }
+            
+                if (parsedMsg.reply.server === "codesphere-ide") {
+                    count++;
+                }
+            
+                if (count === replicaCount) {
+                    deploymentSocket.off("message", nexLogHandler);
+                    deploymentSocket.off("error", errorHandler);
+                    console.log("Alle Hostnamen wurden erfolgreich in runStageServices eingetragen.");
+                    console.log("gtt ", runStageServices);
+                    resolve(runStageServices);
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+
+        deploymentSocket.on("message", nexLogHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
 const getRemoteURL = async (deploymentSocket: any) => {
     return new Promise((resolve, reject) => {
         const nexLogHandler = (msg: any) => {
@@ -664,6 +709,33 @@ const getSubdomainStructure = async (deploymentSocket: any, endpointId: any) => 
 };
 
 
+const landscapeShape = async (deploymentSocket: any, endpointId: any) => {
+    return new Promise((resolve, reject) => {
+        const nexLogHandler = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+                if (msgTest.includes(`"endpointId":${endpointId}`)) {
+                    deploymentSocket.off("message", nexLogHandler);
+                    resolve(parsedMsg.reply);
+                }
+                
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        deploymentSocket.on("message", nexLogHandler);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
 
                 
 module.exports = {
@@ -681,6 +753,7 @@ module.exports = {
     waitForTerminal,
     waitForCiPipeline,
     checkCiPipelineState,
+    checkMSDCiPipelineState,
     getRemoteURL,
     getGitHubToken,
     isVSIX,
@@ -688,6 +761,8 @@ module.exports = {
     ciStepHandler,
     ciStageStatusHandler,
     getSubdomainStructure,
+    landscapeShape,
     getUaSocket: () => uaSocket,
-    getDsSocket: () => dsSocket
+    getDsSocket: () => dsSocket,
+    getWsSocket: () => wsSocket
 };
