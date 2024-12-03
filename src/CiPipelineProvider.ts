@@ -10,7 +10,9 @@ const { setupWs,
         checkCiPipelineState,
         checkMSDCiPipelineState,
         ciStepHandler,
+        ciStepHandlerMSD,
         ciStageStatusHandler, 
+        ciStageStatusHandlerMSD,
         landscapeShape,
     } = require('./ts/wsService');
 
@@ -172,7 +174,10 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
                   console.log("landscapeShape: ", result);
 
                   const waitForLandscapeUpdate = landscapeShape(wsSocket, 57);
-
+                  // TODO: instead of just updating the Landscape this should check wether its synced or not
+                  // if not synced a message needs to be sent to the webview, so the snyc button can be showed to the user (and break this code block)
+                  // after the user clicks on the sync button the landscape should be updated with this case, but we need an additional key-value pair
+                  // which indicates, that the user wants to update the landscape
                   await request(wsSocket, "updateLandscape", { servers: landscapeStructure, workspaceId: workspaceId }, "workspace-service", 57);
 
                   await waitForLandscapeUpdate.then(async (result: any) => {
@@ -273,7 +278,7 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
               const delay = (ms: any) => new Promise(resolve => setTimeout(resolve, ms));
               const workspaceId = parseInt(data.value.workspaceId);
               const stage = data.value.stage;
-              let endpoint: number = 0;
+              let endpoint: number = 777;
               const socketURL = `wss://${data.value.dataCenterId}.${instanceURL}/workspace-proxy`;
               const accessToken = await this.extensionContext.secrets.get("codesphere.accessToken") as string;
               socket = await setupWs(new wsLib.WebSocket(socketURL), "workspace-proxy", accessToken, cache, workspaceId);
@@ -323,12 +328,109 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
                 }
                 
                 break;
-              } else if (stage === "run") {
-                // TODO: open executionInfo for each service
-                // TODO: start run stage Pipeline
-                // TODO: open logs for each service
-                // stream logs for each service and replica
-                // stream status for each service and replica
+              } else if (stage === "run" && runStageServices) {
+                const generateReplicaEndpoints = (services: any) => {
+                  let endpointCounter = 401;
+                  const replicaEndpoints: Record<string, number> = {};
+              
+                  for (const serviceKey in services) {
+                      const service = services[serviceKey];
+                      if (service.replicas) {
+                          for (const replicaKey in service.replicas) {
+                              replicaEndpoints[replicaKey] = endpointCounter++;
+                          }
+                      }
+                  }
+              
+                  return replicaEndpoints;
+              };
+                
+                const endpointArrayReplica = generateReplicaEndpoints(runStageServices);
+                console.log("endpointArrayReplica: ", endpointArrayReplica);
+
+                let status = ciStageStatusHandlerMSD(uaSocket, endpointArrayReplica, this.postMessageToWebview, stage);
+
+                Object.entries(runStageServices).forEach(async ([serviceName, service]: [string, any]) => {
+                  console.log("service: ", serviceName);
+                
+                  const replicas = service.replicas;
+
+                  for (const replicaKey of Object.keys(replicas)) {
+                    console.log("Replica: ", replicaKey);
+
+                    let endpointReplica = endpointArrayReplica[replicaKey];
+
+                    console.log("endpointReplica: ", endpointReplica);
+
+                    await request(
+                      uaSocket,
+                      "executionInfo",
+                      {
+                        replica: replicaKey,
+                        server: serviceName,
+                        stage: "run",
+                        workspaceId: workspaceId,
+                      },
+                      "workspace-proxy",
+                      endpointReplica
+                    );
+                  }
+                }
+                );
+
+                await request(uaSocket, "startPipeline", { workspaceId: workspaceId, stage: stage }, "workspace-proxy", 32);
+
+                const generateReplicaStepEndpoints = (services: any) => {
+                  let endpointCounter = 501;
+                  const replicaStepEndpoints: Record<string, { steps: Record<number, number> }> = {};
+              
+                  for (const serviceKey in services) {
+                      const service = services[serviceKey];
+                      if (service.replicas) {
+                          for (const replicaKey in service.replicas) {
+                              const replica = service.replicas[replicaKey];
+                              
+                              // Initialisiere die steps für das aktuelle Replica
+                              replicaStepEndpoints[replicaKey] = { steps: {} };
+              
+                              // Gehe alle Steps des Replicas durch und weise jedem Step eine eigene EndpointId zu
+                              replica.steps.forEach((step: any, index: number) => {
+                                  replicaStepEndpoints[replicaKey].steps[index] = endpointCounter++;
+                              });
+                          }
+                      }
+                  }
+              
+                  return replicaStepEndpoints;
+              };
+
+              const replicaStepEndpoints = generateReplicaStepEndpoints(runStageServices);
+
+              console.log("Replica Step Endpoints", replicaStepEndpoints);
+
+              let log = ciStepHandlerMSD(uaSocket, replicaStepEndpoints, this.postMessageToWebview, stage);
+                Object.entries(runStageServices).forEach(async ([serviceName, service]: [string, any]) => {
+                  console.log("service: ", serviceName);
+              
+                  const replicas = service.replicas;
+                  for (const replicaKey of Object.keys(replicas)) {
+                      console.log("Replica: ", replicaKey);
+              
+                      const steps = replicas[replicaKey].steps;
+                      for (const stepIndex in steps) {
+                          const endpointId = replicaStepEndpoints[replicaKey].steps[stepIndex];
+                          console.log(`Sending request for step ${stepIndex} with endpointId ${endpointId}`);
+              
+                          request(
+                              uaSocket,
+                              "logs",
+                              { workspaceId: workspaceId, stage: stage, step: parseInt(stepIndex), replica: replicaKey, server: serviceName },
+                              "workspace-proxy",
+                              endpointId
+                          );
+                      }
+                  }
+              });
 
 
               }

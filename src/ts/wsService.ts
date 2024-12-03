@@ -613,6 +613,59 @@ const ciStepHandler = async (deploymentSocket: any, endpointId: number, endpoint
     });
 };
 
+const ciStepHandlerMSD = async (deploymentSocket: any, replicaStepEndpoints: Record<string, { steps: Record<number, number> }>, postMessage: Function, stage: string) => {
+    return new Promise((resolve, reject) => {
+        const ciStageStatus = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+
+                // Iteriere über alle ReplicaKeys
+                for (const replicaKey in replicaStepEndpoints) {
+                    const steps = replicaStepEndpoints[replicaKey].steps;
+
+                    // Überprüfe alle Schritte für das aktuelle Replica
+                    for (const stepIndex in steps) {
+                        const endpointId = steps[stepIndex];  // EndpointId für diesen Step und Replica
+
+                        // Überprüfe, ob die msg die richtige endpointId enthält
+                        if (msgTest.includes(`"endpointId":${endpointId}`)) {
+                            if (parsedMsg.reply) {
+                                console.log("parsedMsg LOGS: ", parsedMsg.reply[0].data, "\nreplicaKey", replicaKey, "\nstepIndex", stepIndex, "\nendpointId", endpointId);
+                                
+                                postMessage('updateCiPipelineLogsMSD', 
+                                    {
+                                        log: parsedMsg.reply[0].data, 
+                                        stepIndex: stepIndex, 
+                                        replicaKey: replicaKey
+                                    } 
+                                );
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        
+        deploymentSocket.on("message", ciStageStatus);
+        deploymentSocket.on("error", errorHandler);
+
+        const cleanup = () => {
+            deploymentSocket.off("message", ciStageStatus);
+            deploymentSocket.off("error", errorHandler);
+        };
+    });
+};
+
 const ciStageStatusHandler = async (deploymentSocket: any, endpointId: number, postMessage: Function, stage: string) => {
     return new Promise((resolve, reject) => {
         const ciStageStatus = (msg: any) => {
@@ -679,6 +732,58 @@ const ciStageStatusHandler = async (deploymentSocket: any, endpointId: number, p
         deploymentSocket.on("error", errorHandler);
     });
 };
+
+const ciStageStatusHandlerMSD = async (deploymentSocket: any, endpointArrayReplica: Record<string, number>, postMessage: Function, stage: string) => {
+    return new Promise((resolve, reject) => {
+        const ciStageStatus = (msg: any) => {
+            try {
+                let msgTest = msg.toString();
+                let parsedMsg = JSON.parse(msgTest);
+                console.log('loooool', parsedMsg);
+                console.log('loooool', endpointArrayReplica);
+
+                if (Object.values(endpointArrayReplica).includes(parsedMsg.endpointId)) {
+                    // Zugehörigen replicaKey finden
+                    const replicaKey = Object.entries(endpointArrayReplica).find(
+                        ([key, value]) => value === parsedMsg.endpointId
+                    )?.[0]; // Der Key wird hier extrahiert
+
+                    if (parsedMsg.reply) {
+                        console.log(
+                            'parsedMsg.reply: ',
+                            parsedMsg.reply,
+                            '\nreplicaKey: ',
+                            replicaKey,
+                            '\nendpointId',
+                            parsedMsg.endpointId // Ausgabe des replicaKeys
+                        );
+                        //TODO: use postMessage to send data to webview, so that the run Stage status can be updated
+                        postMessage('updateCiStageStatusMSD', 
+                            {
+                                stateReplica: parsedMsg.reply.state, 
+                                stepsReplica: parsedMsg.reply.steps, 
+                                replicaKey: replicaKey
+                            } 
+                        );
+                    }
+                }
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                reject(error);
+            }
+        };
+
+        const errorHandler = (err: any) => {
+            console.log("Socket exited with error:" + err);
+            reject(err);
+        };
+        
+        
+        deploymentSocket.on("message", ciStageStatus);
+        deploymentSocket.on("error", errorHandler);
+    });
+};
+
 
 const getSubdomainStructure = async (deploymentSocket: any, endpointId: any) => {
     return new Promise((resolve, reject) => {
@@ -759,7 +864,9 @@ module.exports = {
     isVSIX,
     checkCiPipelineStructure,
     ciStepHandler,
+    ciStepHandlerMSD,
     ciStageStatusHandler,
+    ciStageStatusHandlerMSD,
     getSubdomainStructure,
     landscapeShape,
     getUaSocket: () => uaSocket,

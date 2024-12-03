@@ -1,3 +1,16 @@
+<!-- TODO: open log stream on Mount so that those steams only opens once -->
+<!-- advantage:  the state and the of the Ci-Pipeline is hooked even if we open the ci-Pipeline mid execution (no need to restart for logs and changing state)-->
+
+<!-- IDEA: when a step of a replica changes from successful to running, delete its log content. Problem: is the log stream still open or is it closed when successfull? does it need to reopened again on restart? -->
+<!-- TODO: fix known issues that msd set ups cant load if the MSD is too huge (too many websocket connections at the same time?)-->
+
+<!-- TODO: manage the open steps during ci-pipeline execution: close the steps which were successfull. open the current running step. close all steps when failure. on service restart, open the first step again. on service restart, delete logs of service-->
+
+<!-- TODO: add seperator lines like codesphere cloud -->
+
+<!-- TODO: change grey to codesphere purple when hovering/selecting over waiting ci-pipeline steps (like codespjhere cloud)-->
+
+<!-- TODO: adjust terminal log window size. no overflow horizontally. if terminal log is too wide, then add scoll bar -->
 <script>
     import { onMount } from "svelte";
     import * as vscode from "vscode";
@@ -30,6 +43,15 @@
     let stagelength;
     let stageRunning = [];
     let showService;
+
+    let optionsMSD = {
+                        fg: '#FFF',
+                        bg: '#000',
+                        newline: false,
+                        escapeXML: false,
+                        stream: false
+                    };
+    let ansiConverterMSD = new AnsiToHtml(optionsMSD);
 
     onMount(() => {
         window.addEventListener('message', event => {
@@ -258,7 +280,7 @@
                     console.log("showService", showService);
                     runStageSate = runStageSate;
                     runStageSuccess = runStageSuccess;
-
+                    let i = 112;
                     let isFirstService = true;
                     // add an open field to indicate to the ui that this step is closed in the accordion
                     Object.keys(runStageServices).forEach((key) => {
@@ -270,13 +292,31 @@
                         }
 
                         if (runStageServices[key]?.replicas) {
-                            let isFirst = true; 
+                            let isFirstReplica = true; 
                             Object.keys(runStageServices[key].replicas).forEach(replicaKey => {
-                                runStageServices[key].replicas[replicaKey] = {
-                                    ...runStageServices[key].replicas[replicaKey],
-                                    show: isFirst, 
+                                let replica = runStageServices[key].replicas[replicaKey];
+
+                                // Set the `show` property for the replica
+                                replica = {
+                                    ...replica,
+                                    show: isFirstReplica
                                 };
-                                isFirst = false; 
+                                isFirstReplica = false;
+
+                                // Add `log` to each step within the replica
+                                if (replica.steps) {
+                                    replica.steps = replica.steps.map(step => {
+                                        const updatedStep = {
+                                            ...step,
+                                            log: `hi ${i++}`
+                                        };
+                                        return updatedStep;
+                                    });
+                                    
+                                }
+
+                                // Update the replica in the data structure
+                                runStageServices[key].replicas[replicaKey] = replica;
                             });
                         }
 
@@ -291,6 +331,38 @@
 
                     break;
                 
+                case 'updateCiStageStatusMSD':
+                    //TODO: manage open/show attribute of steps as well
+                    let stateReplica = message.value.stateReplica;
+                    let stepsReplica = message.value.stepsReplica;
+                    let replicaKey = message.value.replicaKey;
+
+                    console.log("stateReplica", stateReplica);
+                    console.log("stepsReplica", stepsReplica);
+                    console.log("replicaKey", replicaKey);
+                    console.log("runStageServices", runStageServices);
+                    for (const serviceKey in runStageServices) {
+                        const service = runStageServices[serviceKey];
+
+                        if (service.replicas && service.replicas[replicaKey]) {
+                            const replica = service.replicas[replicaKey];
+
+                            if (replica.steps) {
+                                replica.steps.forEach((step, index) => {
+                                    if (stepsReplica[index] && stepsReplica[index].state) {
+                                        step.state = stepsReplica[index].state;  
+                                    }
+                                });
+                            }
+
+                            replica.state = stateReplica;
+                            console.log(`Updated replica ${replicaKey}:`, replica);
+
+                            runStageServices[serviceKey] = service;
+                        }
+                    }
+                    
+                    break;
                 case 'updateCiStageStatus':
                     let stage = message.value.stage;
                     let status = message.value.status;
@@ -366,7 +438,32 @@
                     }
 
                     break;
-                
+                case 'updateCiPipelineLogsMSD':
+                    console.log("hiii");
+
+                    console.log("stepIndexMSD: ", message.value.stepIndex);
+                    console.log("logTextMSD: ", message.value.log);
+                    console.log("replicaKeyMSD: ", message.value.replicaKey);
+
+                    message.value.log = parseLogs(message.value.log);
+                    message.value.log = ansiConverterMSD.toHtml(message.value.log);
+
+                    for (const serviceKey in runStageServices) {
+                        const service = runStageServices[serviceKey];
+
+                        if (service.replicas && service.replicas[message.value.replicaKey]) {
+                            const replica = service.replicas[message.value.replicaKey];
+
+                            if (replica.steps && replica.steps[message.value.stepIndex]) {
+                                // if (!replica.steps[message.value.stepIndex].log) {
+                                //     replica.steps[message.value.stepIndex].log = ""; 
+                                // }
+                                replica.steps[message.value.stepIndex].log += message.value.log;
+                            }
+                        }
+                    }
+
+                    break;
                 case 'updateCiPipelineLogs':
                     let stepIndex = message.value.step;
                     let logText = message.value.log;
@@ -411,6 +508,7 @@
     onMount(getCurrentWorkspace());
 
     function startCiStage(workspaceId, dataCenterId, stage, msd=msd) {
+        // FIXME: prepare and test soesnt work anymore
         if (stage == "prepare") {
             stageRunning = [...stageRunning, stage]
             prepareStageSate = true;
@@ -443,17 +541,30 @@
             runStageSuccess = '';
             console.log("runStageServices", msd);
 
-            // TODO: set first step of every service to open
             for (const serviceKey in runStageServices) {
                 const service = runStageServices[serviceKey];
                 
-                // Überprüfe, ob Schritte existieren und setze den ersten Schritt auf open: true
                 if (service.steps && service.steps.length > 0) {
-                    service.steps[0].open = true; // Setzt den ersten Schritt des Services auf "open: true"
+                    service.steps[0].open = true; 
                 }
+
+                if (service.replicas) {
+                    for (const replicaKey in service.replicas) {
+                        const replica = service.replicas[replicaKey];
+
+                        if (replica.steps) {
+                            replica.steps = replica.steps.map(step => ({
+                                ...step,
+                                log: ' ' 
+                            }));
+                        }
+                    }
+                }
+
             }
 
             runStageServices = { ...runStageServices };
+            console.log("test!!!!", runStageServices)
         }
         vscode.postMessage({
             type: 'startCiStage',
@@ -1218,13 +1329,11 @@
 
             {#if showRun }
                 <div class="runstage-msd">
-                    
+                    <!-- TODO: add color depending on failure -->
+
                     <div class="replica-container">
                         {#each Object.entries(runStageServices) as service, index}
-                        <!-- TODO: add running animation when running and add colors for success or failure-->
-                         <!-- TODO: add function to toggle between services -> change shorService veriable -->
                                 <div class="service-container {service[1].show ? 'active' : ''}" on:click={() => toggleServices(service[0])} role="presentation">
-                                        <!-- if no service[1].replicas[i].state equals aborted or failure then start this block-->
                                         {#if !Object.values(service[1].replicas).some(replica => replica.state === 'aborted' || replica.state === 'failure')}
                                             {#if Object.values(service[1].replicas).every(replica => replica.state === "success")}
                                                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1260,6 +1369,8 @@
                         {/each}
                     </div>
                     
+                    <!-- TODO: add color depending on failure -->
+                    
                     <div class="step-container-msd">
                         {#each Object.entries(runStageServices) as service, index}
                             {#if service[0] === showService}    
@@ -1267,7 +1378,6 @@
                                     <div class="accordion">
                                             <div class="stepContainer" on:click={() => toggleAccordion(indexStep, 'run', service = service[0])} role="presentation">
                                                 <!-- Toggle arrow icon -->
-                                                <!-- TODO: add  step.log to Data sctructure-->
                                                 
                                                  {#if step.open}
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
@@ -1366,7 +1476,15 @@
                                                 <div class="stepBox">
                                                     <!-- TODO: add to replicas a log field where logs are placed replicas.[workspace].steps[int].log-->
                                                     
-                                                        
+                                                    {#each Object.entries(service[1].replicas) as replica, index}
+                                                        {#if replica[1].show}
+                                                            {#if replica[1].steps[indexStep].log}
+                                                                <pre class='log'>
+                                                                    {@html replica[1].steps[indexStep].log}
+                                                                </pre>
+                                                            {/if}
+                                                        {/if}
+                                                    {/each}
                                                     <!-- {#if step.log}
                                                         <pre class='log'>
                                                             {@html step.log}
