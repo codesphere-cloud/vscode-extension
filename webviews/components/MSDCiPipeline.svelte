@@ -1,15 +1,27 @@
+<!-- TODO: open log stream on Mount so that those steams only opens once -->
+<!-- advantage:  the state and the of the Ci-Pipeline is hooked even if we open the ci-Pipeline mid execution (no need to restart for logs and changing state)-->
+
+<!-- IDEA: when a step of a replica changes from successful to running, delete its log content. Problem: is the log stream still open or is it closed when successfull? does it need to reopened again on restart? -->
+<!-- TODO: fix known issues that msd set ups cant load if the MSD is too huge (too many websocket connections at the same time?)-->
+
+<!-- TODO: manage the open steps during ci-pipeline execution: close the steps which were successfull. open the current running step. close all steps when failure. on service restart, open the first step again. on service restart, delete logs of service-->
+
+<!-- TODO: add seperator lines like codesphere cloud -->
+
+<!-- TODO: change grey to codesphere purple when hovering/selecting over waiting ci-pipeline steps (like codespjhere cloud)-->
+
+<!-- TODO: adjust terminal log window size. no overflow horizontally. if terminal log is too wide, then add scoll bar -->
 <script>
     import { onMount } from "svelte";
     import * as vscode from "vscode";
     import AnsiToHtml from 'ansi-to-html';
     import "vscode-webview";
 
-    
 
     let CIArray = {};
     let prepareStageSteps = [];
     let testStageSteps = [];
-    let runStageSteps = [];
+    $: runStageServices = [];
     let currentWorkspace;
     let teamId;
     let dcId;
@@ -29,97 +41,16 @@
     let isActiveRun = false;
     let stagelength;
     let stageRunning = [];
+    let showService;
 
-
-    onMount(getCurrentWorkspace);
-
-    function startCiStage(workspaceId, dataCenterId, stage) {
-        if (stage == "prepare") {
-            stageRunning = [...stageRunning, stage]
-            prepareStageSate = true;
-            prepareStageSuccess = '';
-            stagelength = prepareStageSteps.length
-            prepareStageSteps.forEach((step, index) => {
-                if (step.log) {
-                    step.log = '';
-                }
-                step.open = false
-            });
-
-            if (stagelength > 0) {
-                prepareStageSteps[0].open = true
-            }
-        }
-        if (stage == "test") {
-            stageRunning = [...stageRunning, stage]
-            testStageSate = true;
-            testStageSuccess = '';
-            stagelength = testStageSteps.length
-
-            if (stagelength > 0) {
-                testStageSteps[0].open = true
-            }
-        }
-        if (stage == "run") {
-            stageRunning = [...stageRunning, stage]
-            runStageSate = true;
-            runStageSuccess = '';
-            stagelength = runStageSteps.length
-
-            if (stagelength > 0) {
-                runStageSteps[0].open = true
-            }
-        }
-        vscode.postMessage({
-            type: 'startCiStage',
-            value: {
-                workspaceId: workspaceId,
-                stage: stage,
-                dataCenterId: dataCenterId,
-                stepcount: stagelength
-            }
-        });
-    }
-
-    function stopCiStage(workspaceId, dataCenterId, stage) {
-        vscode.postMessage({
-            type: 'stopCiStage',
-            value: {
-                workspaceId: workspaceId,
-                stage: stage,
-                dataCenterId: dataCenterId
-            }
-        });
-        stageRunning = stageRunning.filter(item => item !== stage)
-    };
-
-    function toggleActive(stage) {
-        if (stage === 'prepare') {
-            isActiveprepare = true;
-            isActivetest = false;
-            isActiveRun = false;
-            selectedStage = 'prepare';
-            showPrepare = true;
-            showTest = false;
-            showRun = false;
-        } else if (stage === 'test') {
-            isActiveprepare = false;
-            isActivetest = true;
-            isActiveRun = false;
-            selectedStage = 'test';
-            showPrepare = false;
-            showTest = true;
-            showRun = false;
-        } else if (stage === 'run') {
-            isActiveprepare = false;
-            isActivetest = false;
-            isActiveRun = true;
-            selectedStage = 'run';
-            showPrepare = false;
-            showTest = false;
-            showRun = true;
-        }
-    }
+    let optionsMSD = {
+                        fg: '#FFF',
+                        bg: '#000',
+                        newline: false,
+                        escapeXML: false,
+                        stream: false
+                    };
+    let ansiConverterMSD = new AnsiToHtml(optionsMSD);
 
     onMount(() => {
         window.addEventListener('message', event => {
@@ -138,7 +69,9 @@
                         type: 'getCiPipelineStages',
                         value: {
                             dataCenterId: dcId,
-                            workspaceId: currentWorkspace
+                            workspaceId: currentWorkspace,
+                            origin: 'msd',
+                            teamId: teamId
                         }
                     });
 
@@ -161,13 +94,27 @@
                     CIArray = JSON.parse(message.value.CIArray);
                     prepareStageSteps = CIArray.prepare.steps;
                     testStageSteps = CIArray.test.steps;
-                    runStageSteps = CIArray.run.steps;
+                    // count replica in CIArray.run.foreach(service => service.replicas)
+                    let replicaCount = 1;  // bc ide is always deployed
+                    for (const service of Object.values(CIArray.run)) {
+                        let replicas = service.replicas;
+                        console.log("replicas", replicas);
+                        replicaCount += replicas;
+                    }
+                    
+                    console.log("replicaCount", replicaCount);
+                    runStageServices = CIArray.run;
+
+                    console.log("runstage", runStageServices);
 
                     vscode.postMessage({
                         type: 'getCiStageStatus',
                         value: {
                             workspaceId: currentWorkspace,
-                            datacenterId: dcId
+                            datacenterId: dcId,
+                            runStageServices: runStageServices,
+                            origin: 'msd',
+                            replicaCount: replicaCount
                         }
                     });
 
@@ -182,12 +129,12 @@
                         testStageSuccess = message.value.result;
                     } else if (message.value.stage === 'run') {
                         runStageSate = false;
-                        runStageSuccess = message.value.result;
+                        // runStageSuccess = message.value.result;
                     }
                     break;
                 case 'ciPipelineStatus':
                     if (message.value.dynamic) {
-                        console.log("dynamic", message.value.dynamic);
+                        console.log("dynamic: ", message.value.dynamic);
                         switch (message.value.dynamic) {
                             case 'prepare':
                                 prepareStageSuccess = message.value.prepare.state;
@@ -218,7 +165,8 @@
                                 }
                                 break;
                             case 'run':
-                                runStageSuccess = message.value.run.state;
+                                // runStageSuccess = message.value.run.state;
+                                console.log("runStageState", runStageSuccess);
                                 runStageSteps.forEach(( step, index) => {
                                     Object.assign(step, message.value.run.steps[index]);
                                 });
@@ -266,25 +214,167 @@
                         }
                     }
 
-                    if (message.value.dynamic === false && message.value.run.state){
-                        console.log("run dynamic false", message.value.run.state);
-                        runStageSuccess = message.value.run.state;
-                        runStageSteps.forEach(( step, index) => {
-                            Object.assign(step, message.value.run.steps[index]);
-                        });
+                    if (message.value.dynamic === false && message.value.run){
+                        // TODO: change to msd run stage properties
+                        console.log("run dynamic false", message.value.run);
+                        runStageServices = message.value.run;
+                        console.log("runStageServices111", runStageServices);
+
+
+                         // Standardwert
+                        let hasFailure = false; // Überprüfen, ob ein Replica fehlschlägt
+
+                        for (const serviceName in runStageServices) {
+                            if (runStageServices.hasOwnProperty(serviceName)) {
+                                const service = runStageServices[serviceName];
+                                // Überprüfe, ob replicas existieren
+                                if (service.replicas) {
+                                for (const replicaKey in service.replicas) {
+                                    if (service.replicas.hasOwnProperty(replicaKey)) {
+                                    const replica = service.replicas[replicaKey];
+                                    console.log(replica.state)
+
+                                    // Prüfe den Status des Replicas
+                                    if (replica.state === "running") {
+                                        runStageSuccess = "running";
+                                        break; // Beende die Iteration über replicas
+                                    } else if (replica.state === "failure" || replica.state === "aborted") {
+                                        hasFailure = true;
+                                        console.log("hasFailure: ", hasFailure);
+                                    }
+                                    }
+                                }
+                                }
+
+                                if (runStageSuccess === "running") {
+                                break; // Beende die Iteration über services
+                                }
+                            }
+                        }
+
+                        // Falls kein "running"-State gefunden wurde, überprüfe auf Fehler
+                        if (hasFailure) {
+                        runStageSuccess = "failure";
+                        console.log("runStageSuccess: ", runStageSuccess);
+                        }
+                        
                         if (runStageSuccess === 'running') {
                             runStageSate = true;
                             stageRunning = [...stageRunning, 'run']
                         }
-                        if (runStageSuccess === 'success' || runStageSuccess === 'failure') {
+                        if (runStageSuccess === 'failure') {
                             runStageSate = false;
+                            console.log("runStageSate", runStageSate); 
+                            console.log("runStageSuccess", runStageSuccess);   
+                        }
+                        if (!runStageSuccess) {
+                            runStageSate = false;
+                            runStageSuccess = 'success'
                         }
                     }
                     
                     showPrepare = true;
                     selectedStage = 'prepare';
+                    showService = Object.entries(runStageServices)[0][0];
+                    console.log("showService", showService);
+                    runStageSate = runStageSate;
+                    runStageSuccess = runStageSuccess;
+                    let i = 112;
+                    let isFirstService = true;
+                    // add an open field to indicate to the ui that this step is closed in the accordion
+                    Object.keys(runStageServices).forEach((key) => {
+                        if (runStageServices[key]?.steps) {
+                            runStageServices[key].steps = runStageServices[key].steps.map((step) => ({
+                                ...step,
+                                open: false
+                            }));
+                        }
+
+                        if (runStageServices[key]?.replicas) {
+                            let isFirstReplica = true; 
+                            Object.keys(runStageServices[key].replicas).forEach(replicaKey => {
+                                let replica = runStageServices[key].replicas[replicaKey];
+
+                                // Set the `show` property for the replica
+                                replica = {
+                                    ...replica,
+                                    show: isFirstReplica
+                                };
+                                isFirstReplica = false;
+
+                                // Add `log` to each step within the replica
+                                if (replica.steps) {
+                                    replica.steps = replica.steps.map(step => {
+                                        const updatedStep = {
+                                            ...step,
+                                            log: ``
+                                        };
+                                        return updatedStep;
+                                    });
+                                    
+                                }
+
+                                // Update the replica in the data structure
+                                runStageServices[key].replicas[replicaKey] = replica;
+                            });
+                        }
+
+                        // Neues `show`-Feld für den aktuellen Service
+                        runStageServices[key].show = isFirstService;
+                        isFirstService = false; // Nach dem ersten Service wird das Flag auf false gesetzt
+                    });
+
+                    console.log("runStageServices111", runStageServices);
+
+                    // add selectedReplica to hightlight the first replica in the run stage
+
                     break;
                 
+                case 'updateCiStageStatusMSD':
+                    //TODO: manage open/show attribute of steps as well
+                    let stateReplica = message.value.stateReplica;
+                    let stepsReplica = message.value.stepsReplica;
+                    let replicaKey = message.value.replicaKey;
+
+                    console.log("stateReplica", stateReplica);
+                    console.log("stepsReplica", stepsReplica);
+                    console.log("replicaKey", replicaKey);
+                    console.log("runStageServices", runStageServices);
+                    for (const serviceKey in runStageServices) {
+                        const service = runStageServices[serviceKey];
+
+                        if (service.replicas && service.replicas[replicaKey]) {
+                            const replica = service.replicas[replicaKey];
+
+                            if (replica.steps) {
+                                replica.steps.forEach((step, index) => {
+                                    if (stepsReplica[index] && stepsReplica[index].state) {
+                                        step.state = stepsReplica[index].state;
+                                        console.log("step ahaha: ", step);
+                                        if (stepsReplica[index].state === 'running') {
+                                            console.log("step ahaha1: ", step);
+                                            service.steps[index].open = true;
+                                        } else {
+                                            console.log("step ahaha2: ", step);
+                                            service.steps[index].open = false;
+                                        }
+                                        console.log("step ahaha2: ", step);
+
+                                        runStageServices = { ...runStageServices };  
+                                    }
+                                });
+                            }
+
+                            replica.state = stateReplica;
+                            console.log(`Updated replica ${replicaKey}:`, replica);
+
+                            runStageServices[serviceKey] = service;
+                            runStageServices = { ...runStageServices };
+                        }
+                    }
+
+                    
+                    break;
                 case 'updateCiStageStatus':
                     let stage = message.value.stage;
                     let status = message.value.status;
@@ -360,7 +450,34 @@
                     }
 
                     break;
-                
+                case 'updateCiPipelineLogsMSD':
+                    console.log("hiii");
+
+                    console.log("stepIndexMSD: ", message.value.stepIndex);
+                    console.log("logTextMSD: ", message.value.log);
+                    console.log("replicaKeyMSD: ", message.value.replicaKey);
+
+                    message.value.log = parseLogs(message.value.log);
+                    message.value.log = ansiConverterMSD.toHtml(message.value.log);
+
+                    for (const serviceKey in runStageServices) {
+                        const service = runStageServices[serviceKey];
+
+                        if (service.replicas && service.replicas[message.value.replicaKey]) {
+                            const replica = service.replicas[message.value.replicaKey];
+
+                            if (replica.steps && replica.steps[message.value.stepIndex]) {
+                                // if (!replica.steps[message.value.stepIndex].log) {
+                                //     replica.steps[message.value.stepIndex].log = ""; 
+                                // }
+                                replica.steps[message.value.stepIndex].log += message.value.log;
+                            }
+                        }
+                    }
+
+                    runStageServices = {...runStageServices};
+
+                    break;
                 case 'updateCiPipelineLogs':
                     let stepIndex = message.value.step;
                     let logText = message.value.log;
@@ -401,9 +518,163 @@
         });
     });
 
-        
+    onMount(console.log("v2 msd set up"));
+    onMount(getCurrentWorkspace());
 
-    function toggleAccordion(index, stage) {
+    function startCiStage(workspaceId, dataCenterId, stage, msd=msd) {
+        // FIXME: prepare and test soesnt work anymore
+        if (stage == "prepare") {
+            stageRunning = [...stageRunning, stage]
+            prepareStageSate = true;
+            prepareStageSuccess = '';
+            stagelength = prepareStageSteps.length
+            prepareStageSteps.forEach((step, index) => {
+                if (step.log) {
+                    step.log = '';
+                }
+                step.open = false
+            });
+
+            if (stagelength > 0) {
+                prepareStageSteps[0].open = true
+            }
+        }
+        if (stage == "test") {
+            stageRunning = [...stageRunning, stage]
+            testStageSate = true;
+            testStageSuccess = '';
+            stagelength = testStageSteps.length
+
+            if (stagelength > 0) {
+                testStageSteps[0].open = true
+            }
+        }
+        if (stage == "run") {
+            stageRunning = [...stageRunning, stage]
+            runStageSate = true;
+            runStageSuccess = '';
+            console.log("runStageServices", msd);
+
+            for (const serviceKey in runStageServices) {
+                const service = runStageServices[serviceKey];
+                
+                if (service.steps && service.steps.length > 0) {
+                    service.steps[0].open = true; 
+                }
+
+                if (service.replicas) {
+                    for (const replicaKey in service.replicas) {
+                        const replica = service.replicas[replicaKey];
+
+                        if (replica.steps) {
+                            replica.steps = replica.steps.map(step => ({
+                                ...step,
+                                log: ' ' 
+                            }));
+                        }
+                    }
+                }
+
+            }
+
+            runStageServices = { ...runStageServices };
+            console.log("test!!!!", runStageServices)
+        }
+        vscode.postMessage({
+            type: 'startCiStage',
+            value: {
+                workspaceId: workspaceId,
+                stage: stage,
+                dataCenterId: dataCenterId,
+                stepcount: stagelength,
+                ...(msd && { msd: msd })
+            }
+        });
+    }
+
+    function stopCiStage(workspaceId, dataCenterId, stage) {
+        vscode.postMessage({
+            type: 'stopCiStage',
+            value: {
+                workspaceId: workspaceId,
+                stage: stage,
+                dataCenterId: dataCenterId
+            }
+        });
+        stageRunning = stageRunning.filter(item => item !== stage)
+    };
+
+    function toggleActive(stage) {
+        if (stage === 'prepare') {
+            isActiveprepare = true;
+            isActivetest = false;
+            isActiveRun = false;
+            selectedStage = 'prepare';
+            showPrepare = true;
+            showTest = false;
+            showRun = false;
+        } else if (stage === 'test') {
+            isActiveprepare = false;
+            isActivetest = true;
+            isActiveRun = false;
+            selectedStage = 'test';
+            showPrepare = false;
+            showTest = true;
+            showRun = false;
+        } else if (stage === 'run') {
+            isActiveprepare = false;
+            isActivetest = false;
+            isActiveRun = true;
+            selectedStage = 'run';
+            showPrepare = false;
+            showTest = false;
+            showRun = true;
+        }
+    }
+
+    function toggleServices(service) {
+        showService = service;
+        Object.entries(runStageServices).forEach(serviceData => {
+            console.log("serviceData", serviceData);
+            console.log("service", service);
+
+            if (serviceData[0] !== service && serviceData[1].show === true) {
+                serviceData[1].show = false;
+                console.log("currentReplica.show2", serviceData);
+            }
+            
+            if (serviceData[0] === service && serviceData[1].show === false) {
+                serviceData[1].show = true; // Aktivieren
+                console.log("currentReplica.show", serviceData[1]);
+            }
+            
+        });
+        runStageServices = { ...runStageServices };
+
+    }
+
+    function toggleReplica(service, replica) {
+        Object.entries(runStageServices[service].replicas).forEach(replicaKey => {
+            console.log("replicaKey", replicaKey);
+            console.log("currentReplicarep", replica);
+
+            if (replicaKey[0] !== replica && replicaKey[1].show === true) {
+                replicaKey[1].show = false;
+                console.log("currentReplica.show2", replicaKey);
+            }
+            
+            if (replicaKey[0] === replica && replicaKey[1].show === false) {
+                replicaKey[1].show = true; // Aktivieren
+                console.log("currentReplica.show", replicaKey[1]);
+            }
+            
+        });
+        runStageServices = { ...runStageServices };
+    }
+
+    
+
+    function toggleAccordion(index, stage, service = null) {
         if (stage == 'prepare') {
             if (index >= -1 && index < prepareStageSteps.length +1) {
                 prepareStageSteps[index].open = !prepareStageSteps[index].open;
@@ -416,9 +687,9 @@
             }
         }
 
-        if (stage == 'run') {
-            if (index >= 0 && index < runStageSteps.length +1) {
-                runStageSteps[index].open = !runStageSteps[index].open;
+        if (stage == 'run' && service) {
+            if (index >= 0 && index < runStageServices[service].steps.length +1) {
+                runStageServices[service].steps[index].open = !runStageServices[service].steps[index].open;
             }
         }
     }
@@ -426,6 +697,7 @@
 
 
     function getCurrentWorkspace() {
+        console.log("getCurrentWorkspace task");
         vscode.postMessage({
             type: 'currentWorkspace',
             value: {
@@ -448,22 +720,27 @@
         flex-direction: column;
         align-items: start;
     }
+
+    .log br {
+        overflow-x: auto;
+    }
+
     .circle-container {
         position: relative;
         width: 20px; 
-        height: 20px;
+        height: 20px; 
         display: flex;
         justify-content: center;
-        align-items: center; 
+        align-items: center;
     }
 
     .circle-container-stages {
         position: relative;
         width: 40px; 
-        height: 40px;
+        height: 40px; 
         display: flex;
         justify-content: center;
-        align-items: center; 
+        align-items: center;
     }
 
     .inner-circle {
@@ -558,6 +835,7 @@
         gap: 2px;
     }
 
+
     .title-container {
         display: flex;
         margin-bottom: 10px;
@@ -651,6 +929,10 @@
         background-color: rgba(128, 128, 128, 0.6);
     }
 
+    .inherit::after {
+        background-color: rgba(128, 128, 128, 0.6);
+    }
+
     .pipeline-info {
         display: flex;
         gap: 12px;
@@ -707,7 +989,6 @@
 
     .stepList {
         position: relative;
-        overflow-x: auto;
         white-space: nowrap;
         padding-left: 16px;
         background-color: black;
@@ -729,6 +1010,10 @@
         white-space: nowrap;
         padding: 20px;
     }
+
+    .stepBox pre {
+        overflow-x: auto;
+    }
     
     .accordion{
         display: flex;
@@ -739,10 +1024,10 @@
         font-weight: 600;
         align-self: start;
         width: 100%;
+
     }
 
     .stepTree {
-        border-bottom: 1px solid #80808026;
         display: flex;
         flex-direction: column;
         height: fit-content;
@@ -792,6 +1077,76 @@
 
     .stop {
         display: none;
+    }
+
+    .runstage-msd {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+    }
+
+    .runstage-msd > .step-container-msd:last-child {
+        flex-grow: 1;
+    }
+
+    .replica-container {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .step-container-msd {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        
+    }
+
+    .service-container {
+        display: flex;
+        flex-direction: row;
+        gap: 5px;
+        align-items: center;
+        padding: 7px;
+        cursor: pointer;
+    }
+
+    .service-container:hover, .service-container.active:hover{
+        background-color: #e7e7e726;
+        transition: 0.3s; 
+    }
+
+    .service-container.active  {
+        background-color: #a1a1a126;
+        transition: 0.3s; 
+    }
+
+    .replica-steps-container {
+        display: flex;
+        flex-direction: row;
+        padding: 5px;
+        border: 1px solid #80808026;
+        margin-right: 16px;
+        gap: 5px;
+    }
+
+    .replica-step {
+        display: flex;
+        flex-direction: row;
+        gap: 5px;
+        align-items: center;
+        padding: 7px;
+        width: fit-content;
+        border-radius: 2px;
+    }
+
+    .replica-step:hover, .replica-step.active:hover{
+        background-color: #e7e7e726;
+        transition: 0.3s; 
+    }
+
+    .replica-step.active {
+        background-color: #a1a1a126;
     }
 
 </style>
@@ -887,11 +1242,13 @@
             {/key}
         </div>
     </div>
+
+    <!-- TODO: add here div which contains each service when run stage is selected-->
    
     <div class="ci-pipeline-steps">
         <div class="ciStagesHeadline">
             <h2 class="ciStageTitle">{selectedStage.charAt(0).toUpperCase() + selectedStage.slice(1)}</h2>
-            <button class="runButton" class:running={stageRunning.includes(selectedStage)} on:click={() => startCiStage(currentWorkspace, dcId, selectedStage)}>Run</button>
+            <button class="runButton" class:running={stageRunning.includes(selectedStage)} on:click={() => startCiStage(currentWorkspace, dcId, selectedStage, selectedStage === 'run' ? runStageServices : {})}>Run</button>
             <button class="stopButton" class:stop={!stageRunning.includes(selectedStage)} on:click={() => stopCiStage(currentWorkspace, dcId, selectedStage)}>Stop</button>
             <div style="display: flex; justify-content: end; align-content: end;">
                 {#if selectedStage == "run"}
@@ -1025,65 +1382,174 @@
             {/if}
 
             {#if showRun }
-                {#each runStageSteps as step, index}
-                    <div class="accordion" on:click={() => toggleAccordion(index, 'run')} role="presentation">
-                        
-                        <div class="stepContainer">
-                            <!-- Toggle arrow icon -->
-                            {#if step.open}
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                            </svg>                   
-                            {:else}
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                            </svg>                 
-                            {/if}
-                            {#if step.state === 'success'}
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6 11.1624C8.8995 11.1624 11.25 8.81185 11.25 5.91235C11.25 3.01286 8.8995 0.662354 6 0.662354C3.10051 0.662354 0.75 3.01286 0.75 5.91235C0.75 8.81185 3.10051 11.1624 6 11.1624ZM3.37436 5.2561L4.81811 6.89673L8.62436 3.61548L9.60873 4.59985L4.81811 8.86548L2.38998 6.24048L3.37436 5.2561Z" fill="currentColor"></path>
-                                </svg>
-                            {:else if step.state == 'failure'}
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6 10.1875C8.36102 10.1875 10.275 8.27349 10.275 5.91248C10.275 3.55146 8.36102 1.63748 6 1.63748C3.63898 1.63748 1.725 3.55146 1.725 5.91248C1.725 8.27349 3.63898 10.1875 6 10.1875ZM6 11.1625C8.8995 11.1625 11.25 8.81197 11.25 5.91248C11.25 3.01298 8.8995 0.662476 6 0.662476C3.10051 0.662476 0.75 3.01298 0.75 5.91248C0.75 8.81197 3.10051 11.1625 6 11.1625Z" fill="currentColor"></path>
-                                    <path d="M6.65625 7.88123C6.65625 8.24366 6.36244 8.53748 6 8.53748C5.63756 8.53748 5.34375 8.24366 5.34375 7.88123C5.34375 7.51879 5.63756 7.22498 6 7.22498C6.36244 7.22498 6.65625 7.51879 6.65625 7.88123Z" fill="currentColor"></path>
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M5.99922 3.45618C6.26846 3.45618 6.48672 3.67444 6.48672 3.94368V5.91243C6.48672 6.18167 6.26846 6.39993 5.99922 6.39993C5.72998 6.39993 5.51172 6.18167 5.51172 5.91243V3.94368C5.51172 3.67444 5.72998 3.45618 5.99922 3.45618Z" fill="currentColor"></path>
-                                </svg>
-                            {:else if step.state == 'running'}
-                                <div class="animation-container">
-                                    <div class="circle-container">
-                                        <span class="loader"></span>
-                                    </div>
+                <div class="runstage-msd">
+                    <!-- TODO: add color depending on failure -->
+
+                    <div class="replica-container">
+                        {#each Object.entries(runStageServices) as service, index}
+                                <div class="service-container {service[1].show ? 'active' : ''}" on:click={() => toggleServices(service[0])} role="presentation">
+                                        {#if !Object.values(service[1].replicas).some(replica => replica.state === 'aborted' || replica.state === 'failure')}
+                                            {#if Object.values(service[1].replicas).every(replica => replica.state === "success")}
+                                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6 11.1624C8.8995 11.1624 11.25 8.81185 11.25 5.91235C11.25 3.01286 8.8995 0.662354 6 0.662354C3.10051 0.662354 0.75 3.01286 0.75 5.91235C0.75 8.81185 3.10051 11.1624 6 11.1624ZM3.37436 5.2561L4.81811 6.89673L8.62436 3.61548L9.60873 4.59985L4.81811 8.86548L2.38998 6.24048L3.37436 5.2561Z" fill="currentColor"></path>
+                                                </svg>
+                                            {:else if Object.values(service[1].replicas).every(replica => replica.state === 'waiting')}
+                                                <svg width="16" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8.00122 13.5833C11.1492 13.5833 13.7012 11.0313 13.7012 7.88327C13.7012 4.73525 11.1492 2.18327 8.00122 2.18327C4.8532 2.18327 2.30122 4.73525 2.30122 7.88327C2.30122 11.0313 4.8532 13.5833 8.00122 13.5833ZM8.00122 14.8833C11.8672 14.8833 15.0012 11.7493 15.0012 7.88327C15.0012 4.01728 11.8672 0.88327 8.00122 0.88327C4.13523 0.88327 1.00122 4.01728 1.00122 7.88327C1.00122 11.7493 4.13523 14.8833 8.00122 14.8833Z" fill="currentColor"></path>
+                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M5.85156 5.7237C5.85156 4.62442 6.74271 3.73328 7.84199 3.73328H8.29067C9.59456 3.73328 10.6516 4.79028 10.6516 6.09417C10.6516 6.89174 10.2387 7.63248 9.56035 8.05196L9.24535 8.24675C8.87621 8.47503 8.65152 8.87812 8.6515 9.31214L8.65149 9.38332C8.65147 9.7423 8.36044 10.0333 8.00145 10.0333C7.64247 10.0333 7.35147 9.74222 7.35149 9.38324L7.3515 9.31206C7.35155 8.42763 7.8094 7.60625 8.56162 7.14108L8.87661 6.94629C9.17186 6.76371 9.35156 6.44131 9.35156 6.09417C9.35156 5.50825 8.87659 5.03328 8.29067 5.03328H7.84199C7.46068 5.03328 7.15156 5.34239 7.15156 5.7237V5.88328C7.15156 6.24226 6.86055 6.53328 6.50156 6.53328C6.14258 6.53328 5.85156 6.24226 5.85156 5.88328V5.7237Z" fill="currentColor"></path>
+                                                    <path d="M8.87622 11.2583C8.87622 11.7415 8.48447 12.1333 8.00122 12.1333C7.51797 12.1333 7.12622 11.7415 7.12622 11.2583C7.12622 10.775 7.51797 10.3833 8.00122 10.3833C8.48447 10.3833 8.87622 10.775 8.87622 11.2583Z" fill="currentColor"></path>
+                                                </svg>
+                                            {:else}
+                                                <div class="animation-container" style="padding-left: 5px; padding-right:5px;">
+                                                    <div class="circle-container">
+                                                        <span class="loader"></span>
+                                                    </div>
+                                                </div>
+                                                {#if animateCircles} 
+                                                    <script>
+                                                        startAnimation(); 
+                                                    </script>
+                                                {/if}
+                                            {/if} 
+                                        {:else}
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M5.50507 5.50503C5.77844 5.23166 6.22166 5.23166 6.49502 5.50503L8.00005 7.01005L9.50507 5.50503C9.77844 5.23166 10.2217 5.23166 10.495 5.50503C10.7684 5.7784 10.7684 6.22161 10.495 6.49498L8.99 8L10.495 9.50503C10.7684 9.7784 10.7684 10.2216 10.495 10.495C10.2217 10.7683 9.77844 10.7683 9.50507 10.495L8.00005 8.98995L6.49502 10.495C6.22166 10.7683 5.77844 10.7683 5.50507 10.495C5.23171 10.2216 5.23171 9.7784 5.50507 9.50503L7.0101 8L5.50507 6.49498C5.23171 6.22161 5.23171 5.7784 5.50507 5.50503Z" fill="currentColor"></path>
+                                                <path fill-rule="evenodd" clip-rule="evenodd" d="M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15ZM13.8 8C13.8 11.2033 11.2033 13.8 8 13.8C4.79675 13.8 2.2 11.2033 2.2 8C2.2 4.79675 4.79675 2.2 8 2.2C11.2033 2.2 13.8 4.79675 13.8 8Z" fill="currentColor"></path>
+                                            </svg>
+                                        {/if}
+                                    <span>{service[0]}</span>
                                 </div>
-                                {#if animateCircles} 
-                                    <script>
-                                        startAnimation(); 
-                                    </script>
-                                {/if}
-                            {:else if step.state == 'waiting'}
-                                <svg width="25" height="25" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8.00122 13.5833C11.1492 13.5833 13.7012 11.0313 13.7012 7.88327C13.7012 4.73525 11.1492 2.18327 8.00122 2.18327C4.8532 2.18327 2.30122 4.73525 2.30122 7.88327C2.30122 11.0313 4.8532 13.5833 8.00122 13.5833ZM8.00122 14.8833C11.8672 14.8833 15.0012 11.7493 15.0012 7.88327C15.0012 4.01728 11.8672 0.88327 8.00122 0.88327C4.13523 0.88327 1.00122 4.01728 1.00122 7.88327C1.00122 11.7493 4.13523 14.8833 8.00122 14.8833Z" fill="currentColor"></path>
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M5.85156 5.7237C5.85156 4.62442 6.74271 3.73328 7.84199 3.73328H8.29067C9.59456 3.73328 10.6516 4.79028 10.6516 6.09417C10.6516 6.89174 10.2387 7.63248 9.56035 8.05196L9.24535 8.24675C8.87621 8.47503 8.65152 8.87812 8.6515 9.31214L8.65149 9.38332C8.65147 9.7423 8.36044 10.0333 8.00145 10.0333C7.64247 10.0333 7.35147 9.74222 7.35149 9.38324L7.3515 9.31206C7.35155 8.42763 7.8094 7.60625 8.56162 7.14108L8.87661 6.94629C9.17186 6.76371 9.35156 6.44131 9.35156 6.09417C9.35156 5.50825 8.87659 5.03328 8.29067 5.03328H7.84199C7.46068 5.03328 7.15156 5.34239 7.15156 5.7237V5.88328C7.15156 6.24226 6.86055 6.53328 6.50156 6.53328C6.14258 6.53328 5.85156 6.24226 5.85156 5.88328V5.7237Z" fill="currentColor"></path>
-                                    <path d="M8.87622 11.2583C8.87622 11.7415 8.48447 12.1333 8.00122 12.1333C7.51797 12.1333 7.12622 11.7415 7.12622 11.2583C7.12622 10.775 7.51797 10.3833 8.00122 10.3833C8.48447 10.3833 8.87622 10.775 8.87622 11.2583Z" fill="currentColor"></path>
-                                </svg>
-                            {/if}
-                            {#if step.name == undefined}
-                                <span class="">{step.command}</span>
-                            {:else}
-                                <span class="">{step.name}</span>
-                            {/if}
-                        </div>
-                        <div class="stepList accordion-content" class:show={step.open}>
-                            <div class="stepBox">
-                                {#if step.log}
-                                    <pre class='log'>
-                                        {@html step.log}
-                                    </pre>
-                                {/if}
-                            </div>
-                        </div>
+                        {/each}
                     </div>
-                {/each}
+                    
+                    <!-- TODO: add color depending on failure -->
+                    
+                    <div class="step-container-msd">
+                        {#each Object.entries(runStageServices) as service, index}
+                            {#if service[0] === showService}    
+                                {#each service[1].steps as step, indexStep}
+                                    <div class="accordion">
+                                            <div class="stepContainer" on:click={() => toggleAccordion(indexStep, 'run', service = service[0])} role="presentation">
+                                                <!-- Toggle arrow icon -->
+                                                
+                                                 {#if step.open}
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                                </svg>                   
+                                                {:else}
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16px" height="16px">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                                                </svg>                 
+                                                {/if}
+                                                {#if Object.values(service[1].replicas).every(replica =>
+                                                    replica.steps[indexStep].state === 'success')
+                                                }
+                                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M6 11.1624C8.8995 11.1624 11.25 8.81185 11.25 5.91235C11.25 3.01286 8.8995 0.662354 6 0.662354C3.10051 0.662354 0.75 3.01286 0.75 5.91235C0.75 8.81185 3.10051 11.1624 6 11.1624ZM3.37436 5.2561L4.81811 6.89673L8.62436 3.61548L9.60873 4.59985L4.81811 8.86548L2.38998 6.24048L3.37436 5.2561Z" fill="currentColor"></path>
+                                                    </svg>
+                                                {:else if Object.values(service[1].replicas).some(replica =>
+                                                    replica.steps[indexStep].state === 'failure' ||
+                                                    replica.steps[indexStep].state === 'aborted')
+                                                }
+                                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M5.50507 5.50503C5.77844 5.23166 6.22166 5.23166 6.49502 5.50503L8.00005 7.01005L9.50507 5.50503C9.77844 5.23166 10.2217 5.23166 10.495 5.50503C10.7684 5.7784 10.7684 6.22161 10.495 6.49498L8.99 8L10.495 9.50503C10.7684 9.7784 10.7684 10.2216 10.495 10.495C10.2217 10.7683 9.77844 10.7683 9.50507 10.495L8.00005 8.98995L6.49502 10.495C6.22166 10.7683 5.77844 10.7683 5.50507 10.495C5.23171 10.2216 5.23171 9.7784 5.50507 9.50503L7.0101 8L5.50507 6.49498C5.23171 6.22161 5.23171 5.7784 5.50507 5.50503Z" fill="currentColor"></path>
+                                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15ZM13.8 8C13.8 11.2033 11.2033 13.8 8 13.8C4.79675 13.8 2.2 11.2033 2.2 8C2.2 4.79675 4.79675 2.2 8 2.2C11.2033 2.2 13.8 4.79675 13.8 8Z" fill="currentColor"></path>
+                                                    </svg>
+                                                {:else if Object.values(service[1].replicas).some(replica =>
+                                                    replica.steps[indexStep].state === 'running')
+                                                }
+                                                    <div class="animation-container">
+                                                        <div class="circle-container">
+                                                            <span class="loader"></span>
+                                                        </div>
+                                                    </div>
+                                                    {#if animateCircles} 
+                                                        <script>
+                                                            startAnimation(); 
+                                                        </script>
+                                                    {/if}
+                                                {:else if Object.values(service[1].replicas).some(replica =>
+                                                    replica.steps[indexStep].state === 'waiting')
+                                                }
+                                                    <svg width="16" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M8.00122 13.5833C11.1492 13.5833 13.7012 11.0313 13.7012 7.88327C13.7012 4.73525 11.1492 2.18327 8.00122 2.18327C4.8532 2.18327 2.30122 4.73525 2.30122 7.88327C2.30122 11.0313 4.8532 13.5833 8.00122 13.5833ZM8.00122 14.8833C11.8672 14.8833 15.0012 11.7493 15.0012 7.88327C15.0012 4.01728 11.8672 0.88327 8.00122 0.88327C4.13523 0.88327 1.00122 4.01728 1.00122 7.88327C1.00122 11.7493 4.13523 14.8833 8.00122 14.8833Z" fill="currentColor"></path>
+                                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M5.85156 5.7237C5.85156 4.62442 6.74271 3.73328 7.84199 3.73328H8.29067C9.59456 3.73328 10.6516 4.79028 10.6516 6.09417C10.6516 6.89174 10.2387 7.63248 9.56035 8.05196L9.24535 8.24675C8.87621 8.47503 8.65152 8.87812 8.6515 9.31214L8.65149 9.38332C8.65147 9.7423 8.36044 10.0333 8.00145 10.0333C7.64247 10.0333 7.35147 9.74222 7.35149 9.38324L7.3515 9.31206C7.35155 8.42763 7.8094 7.60625 8.56162 7.14108L8.87661 6.94629C9.17186 6.76371 9.35156 6.44131 9.35156 6.09417C9.35156 5.50825 8.87659 5.03328 8.29067 5.03328H7.84199C7.46068 5.03328 7.15156 5.34239 7.15156 5.7237V5.88328C7.15156 6.24226 6.86055 6.53328 6.50156 6.53328C6.14258 6.53328 5.85156 6.24226 5.85156 5.88328V5.7237Z" fill="currentColor"></path>
+                                                        <path d="M8.87622 11.2583C8.87622 11.7415 8.48447 12.1333 8.00122 12.1333C7.51797 12.1333 7.12622 11.7415 7.12622 11.2583C7.12622 10.775 7.51797 10.3833 8.00122 10.3833C8.48447 10.3833 8.87622 10.775 8.87622 11.2583Z" fill="currentColor"></path>
+                                                    </svg>
+                                                {/if} 
+                                                {#if step.name == undefined}
+                                                    <span class="">{step.command}</span>
+                                                {:else}
+                                                    <span class="">{step.name}</span>
+                                                {/if}
+                                            </div>
+                                            <div class="stepList accordion-content" class:show={step.open}> 
+                                                <div class="replica-steps-container">
+                                                    {#each Object.entries(service[1].replicas) as replica, index}
+                                                        <!-- {console.log('lol', replica)}
+                                                        {console.log('lol2', indexStep)}
+                                                        {console.log('lol3', replica[1].steps)}
+                                                        {console.log('lol33', replica[1].steps[indexStep])} -->
+
+                                                        
+                                                        <div class="replica-step {replica[1].show ? 'active' : ''}" on:click={() => toggleReplica(service[0], replica[0])} role="presentation">
+                                                            {#if replica[1].steps[indexStep].state === "running"}
+                                                                <div class="animation-container" style="padding-left: 5px; padding-right:5px;">
+                                                                    <div class="circle-container">
+                                                                        <span class="loader"></span>
+                                                                    </div>
+                                                                </div>
+                                                                {#if animateCircles} 
+                                                                    <script>
+                                                                        startAnimation(); 
+                                                                    </script>
+                                                                {/if}
+                                                            {:else if replica[1].steps[indexStep].state === "success"}
+                                                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6 11.1624C8.8995 11.1624 11.25 8.81185 11.25 5.91235C11.25 3.01286 8.8995 0.662354 6 0.662354C3.10051 0.662354 0.75 3.01286 0.75 5.91235C0.75 8.81185 3.10051 11.1624 6 11.1624ZM3.37436 5.2561L4.81811 6.89673L8.62436 3.61548L9.60873 4.59985L4.81811 8.86548L2.38998 6.24048L3.37436 5.2561Z" fill="currentColor"></path>
+                                                                </svg>
+                                                            {:else if replica[1].steps[indexStep].state === "failure" || replica[1].steps[indexStep].state === "aborted"}
+                                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path d="M5.50507 5.50503C5.77844 5.23166 6.22166 5.23166 6.49502 5.50503L8.00005 7.01005L9.50507 5.50503C9.77844 5.23166 10.2217 5.23166 10.495 5.50503C10.7684 5.7784 10.7684 6.22161 10.495 6.49498L8.99 8L10.495 9.50503C10.7684 9.7784 10.7684 10.2216 10.495 10.495C10.2217 10.7683 9.77844 10.7683 9.50507 10.495L8.00005 8.98995L6.49502 10.495C6.22166 10.7683 5.77844 10.7683 5.50507 10.495C5.23171 10.2216 5.23171 9.7784 5.50507 9.50503L7.0101 8L5.50507 6.49498C5.23171 6.22161 5.23171 5.7784 5.50507 5.50503Z" fill="currentColor"></path>
+                                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15ZM13.8 8C13.8 11.2033 11.2033 13.8 8 13.8C4.79675 13.8 2.2 11.2033 2.2 8C2.2 4.79675 4.79675 2.2 8 2.2C11.2033 2.2 13.8 4.79675 13.8 8Z" fill="currentColor"></path>
+                                                                </svg>
+                                                            {:else if replica[1].steps[indexStep].state === "waiting"}
+                                                                <svg width="16" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8.00122 13.5833C11.1492 13.5833 13.7012 11.0313 13.7012 7.88327C13.7012 4.73525 11.1492 2.18327 8.00122 2.18327C4.8532 2.18327 2.30122 4.73525 2.30122 7.88327C2.30122 11.0313 4.8532 13.5833 8.00122 13.5833ZM8.00122 14.8833C11.8672 14.8833 15.0012 11.7493 15.0012 7.88327C15.0012 4.01728 11.8672 0.88327 8.00122 0.88327C4.13523 0.88327 1.00122 4.01728 1.00122 7.88327C1.00122 11.7493 4.13523 14.8833 8.00122 14.8833Z" fill="currentColor"></path>
+                                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M5.85156 5.7237C5.85156 4.62442 6.74271 3.73328 7.84199 3.73328H8.29067C9.59456 3.73328 10.6516 4.79028 10.6516 6.09417C10.6516 6.89174 10.2387 7.63248 9.56035 8.05196L9.24535 8.24675C8.87621 8.47503 8.65152 8.87812 8.6515 9.31214L8.65149 9.38332C8.65147 9.7423 8.36044 10.0333 8.00145 10.0333C7.64247 10.0333 7.35147 9.74222 7.35149 9.38324L7.3515 9.31206C7.35155 8.42763 7.8094 7.60625 8.56162 7.14108L8.87661 6.94629C9.17186 6.76371 9.35156 6.44131 9.35156 6.09417C9.35156 5.50825 8.87659 5.03328 8.29067 5.03328H7.84199C7.46068 5.03328 7.15156 5.34239 7.15156 5.7237V5.88328C7.15156 6.24226 6.86055 6.53328 6.50156 6.53328C6.14258 6.53328 5.85156 6.24226 5.85156 5.88328V5.7237Z" fill="currentColor"></path>
+                                                                    <path d="M8.87622 11.2583C8.87622 11.7415 8.48447 12.1333 8.00122 12.1333C7.51797 12.1333 7.12622 11.7415 7.12622 11.2583C7.12622 10.775 7.51797 10.3833 8.00122 10.3833C8.48447 10.3833 8.87622 10.775 8.87622 11.2583Z" fill="currentColor"></path>
+                                                                </svg>
+                                                            {/if}
+                                                            <span>{replica[0].slice(-5)}</span>
+                                                        </div>
+                                                    {/each}
+                                                </div>
+                                                <div class="stepBox">
+                                                    <!-- TODO: add to replicas a log field where logs are placed replicas.[workspace].steps[int].log-->
+                                                    
+                                                    {#each Object.entries(service[1].replicas) as replica, index}
+                                                        {#if replica[1].show}
+                                                            {#if replica[1].steps[indexStep].log}
+                                                                <pre class='log'>
+                                                                    {@html replica[1].steps[indexStep].log}
+                                                                </pre>
+                                                            {/if}
+                                                        {/if}
+                                                    {/each}
+                                                    <!-- {#if step.log}
+                                                        <pre class='log'>
+                                                            {@html step.log}
+                                                        </pre>
+                                                    {/if} -->
+                                                </div>
+                                            </div>
+                                        
+                                    </div>
+                                {/each}
+                            {/if}
+                        {/each}
+                    </div>
+                </div>
             {/if}
         </div>
     </div>
