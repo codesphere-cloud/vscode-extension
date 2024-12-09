@@ -297,7 +297,7 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
                 endpoint = 238;
               }
 
-              if ((stage === "prepare" || stage === "test" || stage === "run") && !runStageServices) {
+              if ((stage === "prepare" || stage === "test" || stage === "run" && !runStageServices )) {
                 await request(uaSocket, "executionInfo", { workspaceId: workspaceId, stage: stage }, "workspace-proxy", endpoint);
 
                 const endpointArray = Array.from({length: data.value.stepcount}, (_, i) => 400 + i);     

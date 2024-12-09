@@ -17,7 +17,6 @@
     import AnsiToHtml from 'ansi-to-html';
     import "vscode-webview";
 
-    
 
     let CIArray = {};
     let prepareStageSteps = [];
@@ -308,7 +307,7 @@
                                     replica.steps = replica.steps.map(step => {
                                         const updatedStep = {
                                             ...step,
-                                            log: `hi ${i++}`
+                                            log: ``
                                         };
                                         return updatedStep;
                                     });
@@ -350,7 +349,18 @@
                             if (replica.steps) {
                                 replica.steps.forEach((step, index) => {
                                     if (stepsReplica[index] && stepsReplica[index].state) {
-                                        step.state = stepsReplica[index].state;  
+                                        step.state = stepsReplica[index].state;
+                                        console.log("step ahaha: ", step);
+                                        if (stepsReplica[index].state === 'running') {
+                                            console.log("step ahaha1: ", step);
+                                            service.steps[index].open = true;
+                                        } else {
+                                            console.log("step ahaha2: ", step);
+                                            service.steps[index].open = false;
+                                        }
+                                        console.log("step ahaha2: ", step);
+
+                                        runStageServices = { ...runStageServices };  
                                     }
                                 });
                             }
@@ -359,8 +369,10 @@
                             console.log(`Updated replica ${replicaKey}:`, replica);
 
                             runStageServices[serviceKey] = service;
+                            runStageServices = { ...runStageServices };
                         }
                     }
+
                     
                     break;
                 case 'updateCiStageStatus':
@@ -462,6 +474,8 @@
                             }
                         }
                     }
+
+                    runStageServices = {...runStageServices};
 
                     break;
                 case 'updateCiPipelineLogs':
@@ -619,7 +633,6 @@
     }
 
     function toggleServices(service) {
-        console.log('hihi', service);
         showService = service;
         Object.entries(runStageServices).forEach(serviceData => {
             console.log("serviceData", serviceData);
@@ -707,10 +720,27 @@
         flex-direction: column;
         align-items: start;
     }
+
+    .log br {
+        overflow-x: auto;
+    }
+
     .circle-container {
         position: relative;
         width: 20px; 
         height: 20px; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .circle-container-stages {
+        position: relative;
+        width: 40px; 
+        height: 40px; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .inner-circle {
@@ -777,6 +807,26 @@
         }
     }
 
+    .loader {
+    width: 70%;
+    height: 70%;
+    border: 2px solid rgba(128, 128, 128, 0.2);
+    border-bottom-color: #814BF6;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 2s linear infinite;
+    }
+
+    @keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+    } 
+
     .animation-container {
         display: flex;
         flex-direction: row;
@@ -784,6 +834,7 @@
         justify-content: start;
         gap: 2px;
     }
+
 
     .title-container {
         display: flex;
@@ -808,7 +859,7 @@
         flex-direction: column;
         justify-content: space-between;
         margin-top: 10px;
-        width: 33%;
+        width: 300px;
     }
 
     .pipelineStageTitle {
@@ -886,6 +937,7 @@
         display: flex;
         gap: 12px;
         align-items: center;
+        height: 40px;
     }
 
     .ci-pipeline-container {
@@ -937,7 +989,6 @@
 
     .stepList {
         position: relative;
-        overflow-x: auto;
         white-space: nowrap;
         padding-left: 16px;
         background-color: black;
@@ -958,6 +1009,10 @@
         overflow-x: auto;
         white-space: nowrap;
         padding: 20px;
+    }
+
+    .stepBox pre {
+        overflow-x: auto;
     }
     
     .accordion{
@@ -1030,6 +1085,10 @@
         gap: 10px;
     }
 
+    .runstage-msd > .step-container-msd:last-child {
+        flex-grow: 1;
+    }
+
     .replica-container {
         display: flex;
         flex-direction: column;
@@ -1040,7 +1099,7 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
-        flex-grow: 1;
+        
     }
 
     .service-container {
@@ -1123,9 +1182,8 @@
             {#key prepareStageSate}
                 {#if prepareStageSate}
                     <div class="animation-container">
-                        <div class="circle-container">
-                            <div class="inner-circle" class:animate={animateCircles}></div>
-                            <div class="outer-circle" class:animate={animateCircles}></div>
+                        <div class="circle-container-stages">
+                            <span class="loader"></span>
                         </div>
                     </div>
                     {#if animateCircles} 
@@ -1149,9 +1207,8 @@
             {#key testStageSate}
                 {#if testStageSate}
                     <div class="animation-container">
-                        <div class="circle-container">
-                            <div class="inner-circle" class:animate={animateCircles}></div>
-                            <div class="outer-circle" class:animate={animateCircles}></div>
+                        <div class="circle-container-stages">
+                            <span class="loader"></span>
                         </div>
                     </div>
                     {#if animateCircles} 
@@ -1172,9 +1229,8 @@
             {#key runStageSate}
                 {#if runStageSate}
                     <div class="animation-container" style="padding-left: 5px; padding-right:5px;">
-                        <div class="circle-container">
-                            <div class="inner-circle" class:animate={animateCircles}></div>
-                            <div class="outer-circle" class:animate={animateCircles}></div>
+                        <div class="circle-container-stages">
+                            <span class="loader"></span>
                         </div>
                     </div>
                     {#if animateCircles} 
@@ -1229,8 +1285,7 @@
                             {:else if step.state == 'running'}
                                 <div class="animation-container">
                                     <div class="circle-container">
-                                        <div class="inner-circle" class:animate={animateCircles}></div>
-                                        <div class="outer-circle" class:animate={animateCircles}></div>
+                                        <span class="loader"></span>
                                     </div>
                                 </div>
                                 {#if animateCircles} 
@@ -1292,8 +1347,7 @@
                             {:else if step.state == 'running'}
                                 <div class="animation-container">
                                     <div class="circle-container">
-                                        <div class="inner-circle" class:animate={animateCircles}></div>
-                                        <div class="outer-circle" class:animate={animateCircles}></div>
+                                        <span class="loader"></span>
                                     </div>
                                 </div>
                                 {#if animateCircles} 
@@ -1348,8 +1402,7 @@
                                             {:else}
                                                 <div class="animation-container" style="padding-left: 5px; padding-right:5px;">
                                                     <div class="circle-container">
-                                                        <div class="inner-circle" class:animate={animateCircles}></div>
-                                                        <div class="outer-circle" class:animate={animateCircles}></div>
+                                                        <span class="loader"></span>
                                                     </div>
                                                 </div>
                                                 {#if animateCircles} 
@@ -1407,8 +1460,7 @@
                                                 }
                                                     <div class="animation-container">
                                                         <div class="circle-container">
-                                                            <div class="inner-circle" class:animate={animateCircles}></div>
-                                                            <div class="outer-circle" class:animate={animateCircles}></div>
+                                                            <span class="loader"></span>
                                                         </div>
                                                     </div>
                                                     {#if animateCircles} 
@@ -1444,8 +1496,7 @@
                                                             {#if replica[1].steps[indexStep].state === "running"}
                                                                 <div class="animation-container" style="padding-left: 5px; padding-right:5px;">
                                                                     <div class="circle-container">
-                                                                        <div class="inner-circle" class:animate={animateCircles}></div>
-                                                                        <div class="outer-circle" class:animate={animateCircles}></div>
+                                                                        <span class="loader"></span>
                                                                     </div>
                                                                 </div>
                                                                 {#if animateCircles} 

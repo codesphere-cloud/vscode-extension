@@ -74,7 +74,7 @@ const setupWs = (ws: any, name: string, accessToken: undefined, cache?:any, work
         
     });
 
-
+    ws.setMaxListeners(200);
 
     return new Promise(resolve => {
         ws.on('open', () => resolve(ws));
@@ -362,7 +362,8 @@ const checkCiPipelineState = async (deploymentSocket: any, endpointId: number) =
             try {
                 let msgTest = msg.toString();
                 let parsedMsg = JSON.parse(msgTest);
-
+                
+                console.log("runstage state: ", parsedMsg);
                 if (msgTest.includes(`"endpointId":${endpointId}`)) {
                     deploymentSocket.off("message", nexLogHandler);
                     deploymentSocket.off("error", errorHandler);
@@ -620,6 +621,7 @@ const ciStepHandlerMSD = async (deploymentSocket: any, replicaStepEndpoints: Rec
                 let msgTest = msg.toString();
                 let parsedMsg = JSON.parse(msgTest);
 
+                console.log("CiStepHandlerMSD: ", parsedMsg);
                 // Iteriere über alle ReplicaKeys
                 for (const replicaKey in replicaStepEndpoints) {
                     const steps = replicaStepEndpoints[replicaKey].steps;
@@ -713,7 +715,7 @@ const ciStageStatusHandler = async (deploymentSocket: any, endpointId: number, p
                     if (parsedMsg.reply.state === "running") {
                         
                         postMessage('updateCiStageStatus', {status: parsedMsg.reply.steps, stage: stage, state: parsedMsg.reply.state} );
-                        
+                        // FIXME
                     }
                 }
             } catch (error) {

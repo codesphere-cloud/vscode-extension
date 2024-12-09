@@ -451,7 +451,19 @@
     .circle-container {
         position: relative;
         width: 20px; 
-        height: 20px; 
+        height: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center; 
+    }
+
+    .circle-container-stages {
+        position: relative;
+        width: 40px; 
+        height: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center; 
     }
 
     .inner-circle {
@@ -518,6 +530,26 @@
         }
     }
 
+    .loader {
+    width: 70%;
+    height: 70%;
+    border: 2px solid rgba(128, 128, 128, 0.2);
+    border-bottom-color: #814BF6;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 2s linear infinite;
+    }
+
+    @keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+    } 
+
     .animation-container {
         display: flex;
         flex-direction: row;
@@ -549,7 +581,7 @@
         flex-direction: column;
         justify-content: space-between;
         margin-top: 10px;
-        width: 33%;
+        width: 300px;
     }
 
     .pipelineStageTitle {
@@ -623,6 +655,7 @@
         display: flex;
         gap: 12px;
         align-items: center;
+        height: 40px;
     }
 
     .ci-pipeline-container {
@@ -794,9 +827,8 @@
             {#key prepareStageSate}
                 {#if prepareStageSate}
                     <div class="animation-container">
-                        <div class="circle-container">
-                            <div class="inner-circle" class:animate={animateCircles}></div>
-                            <div class="outer-circle" class:animate={animateCircles}></div>
+                        <div class="circle-container-stages">
+                            <span class="loader"></span>
                         </div>
                     </div>
                     {#if animateCircles} 
@@ -820,9 +852,8 @@
             {#key testStageSate}
                 {#if testStageSate}
                     <div class="animation-container">
-                        <div class="circle-container">
-                            <div class="inner-circle" class:animate={animateCircles}></div>
-                            <div class="outer-circle" class:animate={animateCircles}></div>
+                        <div class="circle-container-stages">
+                            <span class="loader"></span>
                         </div>
                     </div>
                     {#if animateCircles} 
@@ -843,9 +874,8 @@
             {#key runStageSate}
                 {#if runStageSate}
                     <div class="animation-container" style="padding-left: 5px; padding-right:5px;">
-                        <div class="circle-container">
-                            <div class="inner-circle" class:animate={animateCircles}></div>
-                            <div class="outer-circle" class:animate={animateCircles}></div>
+                        <div class="circle-container-stages">
+                            <span class="loader"></span>
                         </div>
                     </div>
                     {#if animateCircles} 
@@ -898,8 +928,7 @@
                             {:else if step.state == 'running'}
                                 <div class="animation-container">
                                     <div class="circle-container">
-                                        <div class="inner-circle" class:animate={animateCircles}></div>
-                                        <div class="outer-circle" class:animate={animateCircles}></div>
+                                        <span class="loader"></span>
                                     </div>
                                 </div>
                                 {#if animateCircles} 
@@ -961,8 +990,7 @@
                             {:else if step.state == 'running'}
                                 <div class="animation-container">
                                     <div class="circle-container">
-                                        <div class="inner-circle" class:animate={animateCircles}></div>
-                                        <div class="outer-circle" class:animate={animateCircles}></div>
+                                        <span class="loader"></span>
                                     </div>
                                 </div>
                                 {#if animateCircles} 
@@ -1024,8 +1052,7 @@
                             {:else if step.state == 'running'}
                                 <div class="animation-container">
                                     <div class="circle-container">
-                                        <div class="inner-circle" class:animate={animateCircles}></div>
-                                        <div class="outer-circle" class:animate={animateCircles}></div>
+                                        <span class="loader"></span>
                                     </div>
                                 </div>
                                 {#if animateCircles} 
