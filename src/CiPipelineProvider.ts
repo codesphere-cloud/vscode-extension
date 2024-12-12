@@ -144,7 +144,7 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
     
               let prepare;
               let test;
-              let run;
+              let run: any;
               
               const prepareCheck = checkCiPipelineState(uaSocketconnect2, 35);
               const testCheck = checkCiPipelineState(uaSocketconnect2, 136);
@@ -170,7 +170,7 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
 
                 landscapeShapeData.then(async (result: any) => {
                   console.log("landscapeShape: ", result);
-                  landscapeStructure = result.map(({ workspaceId, ...rest }) => rest);
+                  landscapeStructure = result.map(({ workspaceId, ...rest }: { workspaceId: string; [key: string]: any }) => rest);
                   console.log("landscapeShape: ", result);
 
                   const waitForLandscapeUpdate = landscapeShape(wsSocket, 57);
@@ -418,8 +418,8 @@ export class CiPipelineProvider implements vscode.WebviewViewProvider {
               
                       const steps = replicas[replicaKey].steps;
                       for (const stepIndex in steps) {
-                          const endpointId = replicaStepEndpoints[replicaKey].steps[stepIndex];
-                          console.log(`Sending request for step ${stepIndex} with endpointId ${endpointId}`);
+                        const endpointId = (replicaStepEndpoints[replicaKey]?.steps as any[])[Number(stepIndex)];
+                        console.log(`Sending request for step ${stepIndex} with endpointId ${endpointId}`);
               
                           request(
                               uaSocket,
